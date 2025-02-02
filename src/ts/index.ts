@@ -1,8 +1,15 @@
 import { fetchJSON, fetchBinary } from "./fetch";
-import { readStationFile } from "./stationFile";
+import {
+  countStations,
+  findClosestStations,
+  readStationFile,
+} from "./stationFile";
+import { requestLocation, getLocation } from "./location";
+import { sendStationList } from "./data";
 
 Pebble.addEventListener("ready", (e) => {
   console.log("PKJS ready, sending jsReady message");
+  requestLocation();
   Pebble.sendAppMessage(
     {
       jsReady: 1,
@@ -43,10 +50,23 @@ async function getStationList() {
       return;
     }
 
-    console.log("got array", response.length);
+    console.log("got binary of length", response.length);
+    console.log("decoding station file");
 
-    const file = readStationFile(response);
+    readStationFile(response);
 
-    console.log("stations", JSON.stringify(file["SOP"]));
+    console.log(`decoded ${countStations()} stations`);
+
+    getLocation((position) => {
+      const closest = findClosestStations(
+        position.coords.latitude,
+        position.coords.longitude,
+        5
+      );
+
+      console.log("closest stations", JSON.stringify(closest));
+
+      sendStationList(closest);
+    });
   });
 }

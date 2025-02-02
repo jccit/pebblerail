@@ -3,10 +3,15 @@
 #include "data.h"
 
 static Window *s_window;
+static StatusBarLayer *s_status_bar;
 
 static void prv_window_load(Window *window)
 {
+  s_status_bar = status_bar_layer_create();
+
   station_screen_init(window);
+
+  layer_add_child(window_get_root_layer(window), status_bar_layer_get_layer(s_status_bar));
 }
 
 static void prv_window_unload(Window *window)

@@ -7,6 +7,10 @@ export interface Station {
   availableOperators: string[];
 }
 
+export interface StationWithDistance extends Station {
+  distance: string;
+}
+
 export interface KBStation {
   Name: string;
   CrsCode: string;
