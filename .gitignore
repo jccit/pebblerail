@@ -2,3 +2,4 @@ build/
 .lock*
 node_modules/
 src/ts/gen/
+src/pkjs/
