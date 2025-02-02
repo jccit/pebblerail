@@ -26,8 +26,16 @@
     },
     "messageKeys": [
       "jsReady",
-      "dataRequest",
-      "stationList"
+      "request",
+      "requestData",
+      "objectType",
+      "count",
+      "serviceID",
+      "locationName",
+      "distance",
+      "crs",
+      "time",
+      "platform"
     ],
     "resources": {
       "media": []

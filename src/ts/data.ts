@@ -1,31 +1,59 @@
+import { TrainService } from "./types/departureBoard";
 import { StationWithDistance } from "./types/station";
 
-function sendItem(key: string, items: Array<string>, index: number) {
-  const dict: Record<string, string> = {};
-  dict[key] = items[index];
+function sendItem(items: Record<string, any>, index: number) {
+  const item = items[index];
 
   Pebble.sendAppMessage(
-    dict,
+    item,
     () => {
-      console.log("sent item", key, index);
+      console.log("sent item", JSON.stringify(item));
       index++;
 
       if (index < items.length) {
-        sendItem(key, items, index);
+        sendItem(items, index);
       } else {
         console.log("sent all items");
       }
     },
     () => {
-      console.log("failed to send item", key, index);
+      console.log("failed to send item", index);
     }
   );
 }
 
 export function sendStationList(stations: StationWithDistance[]) {
-  const serialised = stations
-    .slice(0, 5)
-    .map((station) => `${station.name};${station.crs}:${station.distance}`);
+  const serialised = stations.slice(0, 5).map((station) => ({
+    objectType: "stationList",
+    locationName: station.name,
+    crs: station.crs,
+    distance: station.distance,
+  }));
 
-  sendItem("stationList", serialised, 0);
+  sendItem(serialised, 0);
+}
+
+export function sendDepartureList(departures: TrainService[]) {
+  const departuresToSend = departures.slice(0, 10);
+
+  const serialised = departuresToSend.map((departure) => {
+    let departureTime = departure.std;
+
+    if (departure.etd !== "On time") {
+      departureTime = departure.etd;
+    }
+
+    return {
+      objectType: "departureList",
+      count: departuresToSend.length,
+      serviceID: departure.serviceID,
+      locationName: departure.destination.location.locationName,
+      time: departureTime,
+      platform: departure.platform || "-1",
+    };
+  });
+
+  console.log(`Sending ${serialised.length} departures`);
+
+  sendItem(serialised, 0);
 }

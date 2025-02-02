@@ -30,7 +30,7 @@ export interface DepartureBoard {
 export interface TrainService {
   std: string;
   etd: string;
-  platform: string;
+  platform?: string;
   operator: string;
   operatorCode: string;
   serviceID: string;

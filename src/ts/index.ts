@@ -5,7 +5,8 @@ import {
   readStationFile,
 } from "./stationFile";
 import { requestLocation, getLocation } from "./location";
-import { sendStationList } from "./data";
+import { sendDepartureList, sendStationList } from "./data";
+import { getDepartureBoard } from "./departures";
 
 Pebble.addEventListener("ready", (e) => {
   console.log("PKJS ready, sending jsReady message");
@@ -28,12 +29,17 @@ Pebble.addEventListener("appmessage", (e) => {
 
   console.log("Got message: " + JSON.stringify(dict));
 
-  var command = dict.dataRequest;
+  var command = dict.request;
 
   switch (command) {
     case "stationList":
       console.log("Station list requested");
       getStationList();
+      break;
+    case "departures":
+      const crs = dict.requestData;
+      console.log(`Departures for ${crs} requested`);
+      getDepartures(crs);
       break;
     default:
       console.log("Unknown command: " + command);
@@ -41,7 +47,7 @@ Pebble.addEventListener("appmessage", (e) => {
   }
 });
 
-async function getStationList() {
+function getStationList() {
   console.log("starting fetch");
 
   fetchBinary("https://rail-app-tau.vercel.app/api/stations", (response) => {
@@ -68,5 +74,11 @@ async function getStationList() {
 
       sendStationList(closest);
     });
+  });
+}
+
+function getDepartures(crs: string) {
+  getDepartureBoard(crs, (departures) => {
+    sendDepartureList(departures);
   });
 }

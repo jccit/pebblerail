@@ -1,10 +1,12 @@
 #include <pebble.h>
 #include "station_screen.h"
+#include "departures_screen.h"
 #include "data.h"
 
 void show_departures(char *crs)
 {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Showing departures for %s", crs);
+  departures_screen_init(crs);
 }
 
 int main(void)

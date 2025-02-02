@@ -42,45 +42,40 @@ static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_in
 
 static void closest_station_callback(DictionaryIterator *iter)
 {
-  Tuple *data_t = dict_find(iter, MESSAGE_KEY_stationList);
-  if (!data_t)
+  Tuple *location_tuple = dict_find(iter, MESSAGE_KEY_locationName);
+  if (!location_tuple)
   {
     APP_LOG(APP_LOG_LEVEL_ERROR, "No station data received");
     return;
   }
 
-  char *station_str = data_t->value->cstring;
-  char *crs_separator = strchr(station_str, ';');
-  if (crs_separator == NULL)
+  char *location_name = location_tuple->value->cstring;
+
+  Tuple *crs_tuple = dict_find(iter, MESSAGE_KEY_crs);
+  if (!crs_tuple)
   {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "Invalid station data format: %s", station_str);
+    APP_LOG(APP_LOG_LEVEL_ERROR, "No crs data received");
     return;
   }
 
-  char *distance_separator = strchr(station_str, ':');
-  if (distance_separator == NULL)
+  char *crs = crs_tuple->value->cstring;
+
+  Tuple *distance_tuple = dict_find(iter, MESSAGE_KEY_distance);
+  if (!distance_tuple)
   {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "Invalid station data format: %s", station_str);
+    APP_LOG(APP_LOG_LEVEL_ERROR, "No distance data received");
     return;
   }
 
-  // Extract and store the station name.
-  size_t name_length = crs_separator - station_str;
-  if (name_length >= sizeof(s_stations[s_station_count].name))
-  {
-    name_length = sizeof(s_stations[s_station_count].name) - 1;
-  }
-  memcpy(s_stations[s_station_count].name, station_str, name_length);
-  s_stations[s_station_count].name[name_length] = '\0';
+  char *distance = distance_tuple->value->cstring;
 
-  // Extract and store the crs.
-  char *crs_str = crs_separator + 1;
-  strncpy(s_stations[s_station_count].crs, crs_str, sizeof(s_stations[s_station_count].crs) - 1);
+  strncpy(s_stations[s_station_count].name, location_name, sizeof(s_stations[s_station_count].name) - 1);
+  s_stations[s_station_count].name[sizeof(s_stations[s_station_count].name) - 1] = '\0';
+
+  strncpy(s_stations[s_station_count].crs, crs, sizeof(s_stations[s_station_count].crs) - 1);
   s_stations[s_station_count].crs[sizeof(s_stations[s_station_count].crs) - 1] = '\0';
 
-  // Extract and store the distance.
-  char *distance_str = distance_separator + 1;
-  strncpy(s_stations[s_station_count].distance, distance_str, sizeof(s_stations[s_station_count].distance) - 1);
+  strncpy(s_stations[s_station_count].distance, distance, sizeof(s_stations[s_station_count].distance) - 1);
   s_stations[s_station_count].distance[sizeof(s_stations[s_station_count].distance) - 1] = '\0';
 
   s_station_count++;
@@ -103,7 +98,7 @@ void load_stations()
   request_closest_stations();
 }
 
-void prv_window_load(Window *window)
+void station_window_load(Window *window)
 {
   s_status_bar = status_bar_layer_create();
 
@@ -126,7 +121,7 @@ void prv_window_load(Window *window)
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Station screen initialized");
 }
 
-void prv_window_unload(Window *window)
+void station_window_unload(Window *window)
 {
   station_screen_deinit();
 }
@@ -136,8 +131,8 @@ void station_screen_init(void (*open_station_callback)(char *crs))
   s_open_station_callback = open_station_callback;
   s_window = window_create();
   window_set_window_handlers(s_window, (WindowHandlers){
-                                           .load = prv_window_load,
-                                           .unload = prv_window_unload,
+                                           .load = station_window_load,
+                                           .unload = station_window_unload,
                                        });
   const bool animated = true;
   window_stack_push(s_window, animated);

@@ -8,6 +8,7 @@ static bool js_ready = false;
 static CommandType cached_command = COMMAND_TYPE_UNKNOWN;
 
 static void (*s_closest_station_callback)(DictionaryIterator *iter) = NULL;
+static void (*s_departures_callback)(DictionaryIterator *iter) = NULL;
 
 char *command_type_to_string(CommandType command)
 {
@@ -15,12 +16,14 @@ char *command_type_to_string(CommandType command)
   {
   case COMMAND_TYPE_STATION_LIST:
     return "stationList";
+  case COMMAND_TYPE_DEPARTURES:
+    return "departures";
   default:
     return "unknown";
   }
 }
 
-void send_data_request(CommandType command)
+void send_data_request(CommandType command, char *data, uint8_t data_length)
 {
   // If we're not ready, cache the command and send it when we are ready
   if (!js_ready)
@@ -39,7 +42,12 @@ void send_data_request(CommandType command)
     return;
   }
 
-  dict_write_cstring(iter, MESSAGE_KEY_dataRequest, command_type_to_string(command));
+  if (data && data_length > 0)
+  {
+    dict_write_cstring(iter, MESSAGE_KEY_requestData, data);
+  }
+
+  dict_write_cstring(iter, MESSAGE_KEY_request, command_type_to_string(command));
 
   result = app_message_outbox_send();
 
@@ -56,7 +64,7 @@ void cached_command_send()
   if (cached_command)
   {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Sending cached data request: %d", cached_command);
-    send_data_request(cached_command);
+    send_data_request(cached_command, NULL, 0);
     cached_command = COMMAND_TYPE_UNKNOWN;
   }
 }
@@ -90,10 +98,17 @@ void inbox_received_callback(DictionaryIterator *iter, void *context)
     js_ready_callback(jsReady->value->int32 > 0);
   }
 
-  Tuple *stationList = dict_find(iter, MESSAGE_KEY_stationList);
-  if (stationList && s_closest_station_callback != NULL)
+  Tuple *objectType = dict_find(iter, MESSAGE_KEY_objectType);
+  if (objectType)
   {
-    s_closest_station_callback(iter);
+    if (strcmp(objectType->value->cstring, "stationList") == 0 && s_closest_station_callback != NULL)
+    {
+      s_closest_station_callback(iter);
+    }
+    else if (strcmp(objectType->value->cstring, "departureList") == 0 && s_departures_callback != NULL)
+    {
+      s_departures_callback(iter);
+    }
   }
 }
 
@@ -107,10 +122,20 @@ void data_init()
 
 void request_closest_stations()
 {
-  send_data_request(COMMAND_TYPE_STATION_LIST);
+  send_data_request(COMMAND_TYPE_STATION_LIST, NULL, 0);
+}
+
+void request_departures(char *crs)
+{
+  send_data_request(COMMAND_TYPE_DEPARTURES, crs, strlen(crs));
 }
 
 void set_closest_station_callback(void (*callback)(DictionaryIterator *iter))
 {
   s_closest_station_callback = callback;
+}
+
+void set_departures_callback(void (*callback)(DictionaryIterator *iter))
+{
+  s_departures_callback = callback;
 }
