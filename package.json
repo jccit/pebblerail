@@ -1,0 +1,31 @@
+{
+  "name": "pebblerail",
+  "author": "MakeAwesomeHappen",
+  "version": "1.0.0",
+  "keywords": ["pebble-app"],
+  "private": true,
+  "dependencies": {},
+  "pebble": {
+    "displayName": "pebblerail",
+    "uuid": "4385412a-fc54-4222-9c83-e392d4f22fa8",
+    "sdkVersion": "3",
+    "enableMultiJS": true,
+    "targetPlatforms": [
+      "aplite",
+      "basalt",
+      "chalk",
+      "diorite"
+    ],
+    "watchapp": {
+      "watchface": false
+    },
+    "messageKeys": [
+      "jsReady",
+      "dataRequest",
+      "stationList"
+    ],
+    "resources": {
+      "media": []
+    }
+  }
+}
