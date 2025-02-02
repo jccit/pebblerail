@@ -2,6 +2,7 @@
 
 const uint32_t inbox_size = 512;
 const uint32_t outbox_size = 256;
+const uint32_t CACHE_COMMAND_DELAY_MS = 500;
 
 static bool js_ready = false;
 static CommandType cached_command = COMMAND_TYPE_UNKNOWN;
@@ -50,17 +51,31 @@ void send_data_request(CommandType command)
 
 // ------ APP MESSAGE CALLBACKS ------
 
-void js_ready_callback(bool ready)
+void cached_command_send()
 {
-  APP_LOG(APP_LOG_LEVEL_INFO, "JS READY = %d", ready);
-  js_ready = ready;
-
-  // If we have a cached command, send it
   if (cached_command)
   {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Sending cached data request: %d", cached_command);
     send_data_request(cached_command);
     cached_command = COMMAND_TYPE_UNKNOWN;
+  }
+}
+
+// Queues the cached command to be sent after a delay
+void cached_command_queue()
+{
+  app_timer_register(CACHE_COMMAND_DELAY_MS, cached_command_send, NULL);
+}
+
+void js_ready_callback(bool ready)
+{
+  APP_LOG(APP_LOG_LEVEL_INFO, "JS READY = %d", ready);
+  js_ready = ready;
+
+  // If we have a cached command, queue the send
+  if (cached_command)
+  {
+    cached_command_queue();
   }
 }
 
