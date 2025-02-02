@@ -1,11 +1,15 @@
 #include "station_screen.h"
 #include "data.h"
 
+static Window *s_window;
+static StatusBarLayer *s_status_bar;
 static MenuLayer *s_menu_layer;
 
 #define STATION_COUNT 5
 static struct Station s_stations[STATION_COUNT];
 static uint8_t s_station_count = 0;
+
+static void (*s_open_station_callback)(char *crs);
 
 // ------ MENU LAYER CALLBACKS ------
 
@@ -29,6 +33,11 @@ static void menu_draw_header_callback(GContext *ctx, const Layer *cell_layer, ui
   menu_cell_basic_header_draw(ctx, cell_layer, "Closest stations");
 }
 
+static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data)
+{
+  s_open_station_callback(s_stations[cell_index->row].crs);
+}
+
 // ------ END MENU LAYER CALLBACKS ------
 
 static void closest_station_callback(DictionaryIterator *iter)
@@ -41,15 +50,22 @@ static void closest_station_callback(DictionaryIterator *iter)
   }
 
   char *station_str = data_t->value->cstring;
-  char *separator = strchr(station_str, ';');
-  if (separator == NULL)
+  char *crs_separator = strchr(station_str, ';');
+  if (crs_separator == NULL)
+  {
+    APP_LOG(APP_LOG_LEVEL_ERROR, "Invalid station data format: %s", station_str);
+    return;
+  }
+
+  char *distance_separator = strchr(station_str, ':');
+  if (distance_separator == NULL)
   {
     APP_LOG(APP_LOG_LEVEL_ERROR, "Invalid station data format: %s", station_str);
     return;
   }
 
   // Extract and store the station name.
-  size_t name_length = separator - station_str;
+  size_t name_length = crs_separator - station_str;
   if (name_length >= sizeof(s_stations[s_station_count].name))
   {
     name_length = sizeof(s_stations[s_station_count].name) - 1;
@@ -57,8 +73,13 @@ static void closest_station_callback(DictionaryIterator *iter)
   memcpy(s_stations[s_station_count].name, station_str, name_length);
   s_stations[s_station_count].name[name_length] = '\0';
 
+  // Extract and store the crs.
+  char *crs_str = crs_separator + 1;
+  strncpy(s_stations[s_station_count].crs, crs_str, sizeof(s_stations[s_station_count].crs) - 1);
+  s_stations[s_station_count].crs[sizeof(s_stations[s_station_count].crs) - 1] = '\0';
+
   // Extract and store the distance.
-  char *distance_str = separator + 1;
+  char *distance_str = distance_separator + 1;
   strncpy(s_stations[s_station_count].distance, distance_str, sizeof(s_stations[s_station_count].distance) - 1);
   s_stations[s_station_count].distance[sizeof(s_stations[s_station_count].distance) - 1] = '\0';
 
@@ -82,9 +103,9 @@ void load_stations()
   request_closest_stations();
 }
 
-void station_screen_init(Window *window)
+void prv_window_load(Window *window)
 {
-  load_stations();
+  s_status_bar = status_bar_layer_create();
 
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
@@ -95,16 +116,37 @@ void station_screen_init(Window *window)
                                                    .get_num_rows = menu_get_num_rows_callback,
                                                    .draw_row = menu_draw_row_callback,
                                                    .draw_header = menu_draw_header_callback,
+                                                   .select_click = menu_select_click_callback,
                                                });
 
   menu_layer_set_click_config_onto_window(s_menu_layer, window);
 
   layer_add_child(window_layer, menu_layer_get_layer(s_menu_layer));
-
+  layer_add_child(window_layer, status_bar_layer_get_layer(s_status_bar));
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Station screen initialized");
+}
+
+void prv_window_unload(Window *window)
+{
+  station_screen_deinit();
+}
+
+void station_screen_init(void (*open_station_callback)(char *crs))
+{
+  s_open_station_callback = open_station_callback;
+  s_window = window_create();
+  window_set_window_handlers(s_window, (WindowHandlers){
+                                           .load = prv_window_load,
+                                           .unload = prv_window_unload,
+                                       });
+  const bool animated = true;
+  window_stack_push(s_window, animated);
+
+  load_stations();
 }
 
 void station_screen_deinit()
 {
   menu_layer_destroy(s_menu_layer);
+  window_destroy(s_window);
 }

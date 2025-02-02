@@ -25,7 +25,7 @@ function sendItem(key: string, items: Array<string>, index: number) {
 export function sendStationList(stations: StationWithDistance[]) {
   const serialised = stations
     .slice(0, 5)
-    .map((station) => `${station.name};${station.distance}`);
+    .map((station) => `${station.name};${station.crs}:${station.distance}`);
 
   sendItem("stationList", serialised, 0);
 }
