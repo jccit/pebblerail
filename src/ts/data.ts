@@ -1,4 +1,5 @@
-import { TrainService } from "./types/departureBoard";
+import { calculateTime } from "./time";
+import { TrainService } from "./types/service";
 import { StationWithDistance } from "./types/station";
 
 function sendItem(items: Record<string, any>, index: number) {
@@ -37,18 +38,19 @@ export function sendDepartureList(departures: TrainService[]) {
   const departuresToSend = departures.slice(0, 10);
 
   const serialised = departuresToSend.map((departure) => {
-    let departureTime = departure.std;
+    const time = calculateTime(departure.departure);
+    let timeString = time?.scheduled || "00:00";
 
-    if (departure.etd !== "On time") {
-      departureTime = departure.etd;
+    if (time?.isLate) {
+      timeString = `${time.actual} (${time.lateness}m late)`;
     }
 
     return {
       objectType: "departureList",
       count: departuresToSend.length,
-      serviceID: departure.serviceID,
-      locationName: departure.destination.location.locationName,
-      time: departureTime,
+      serviceID: departure.rid,
+      locationName: departure.destination.locationName,
+      time: timeString,
       platform: departure.platform || "-1",
     };
   });

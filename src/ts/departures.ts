@@ -1,5 +1,6 @@
 import { fetchJSON } from "./fetch";
-import { DepartureBoard, TrainService } from "./types/departureBoard";
+import { DepartureBoard } from "./types/departureBoard";
+import { TrainService } from "./types/service";
 
 export function getDepartureBoard(
   crs: string,

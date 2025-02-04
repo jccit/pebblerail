@@ -1,6 +1,6 @@
 {
   "name": "pebblerail",
-  "author": "MakeAwesomeHappen",
+  "author": "jcit",
   "version": "1.0.0",
   "keywords": [
     "pebble-app"
@@ -11,7 +11,7 @@
     "proto": "pbjs -t static-module -w es6 --es6 -o src/ts/gen/stations.js src/ts/proto/stations.proto && pbts -o src/ts/gen/stations.d.ts src/ts/gen/stations.js"
   },
   "pebble": {
-    "displayName": "pebblerail",
+    "displayName": "PebbleRail",
     "uuid": "4385412a-fc54-4222-9c83-e392d4f22fa8",
     "sdkVersion": "3",
     "enableMultiJS": true,

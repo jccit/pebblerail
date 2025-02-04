@@ -1,42 +1,9 @@
-import type { Location } from "./location";
+import { TrainService } from "./service";
 
-/**
- * Raw response for a departure board from Darwin
- */
-export interface DarwinDepartureBoard {
-  GetDepartureBoardResponse: {
-    GetStationBoardResult: {
-      generatedAt: string;
-      locationName: string;
-      crs: string;
-      platformAvailable: boolean;
-      trainServices: {
-        service: TrainService[];
-      };
-    };
-  };
-}
-
-/**
- * Cleaned departure board
- */
 export interface DepartureBoard {
-  generatedAt: Date;
+  services: TrainService[];
   locationName: string;
   crs: string;
-  services: TrainService[];
-}
-
-export interface TrainService {
-  std: string;
-  etd: string;
-  platform?: string;
-  operator: string;
-  operatorCode: string;
-  serviceID: string;
-  serviceType: string;
-  length: string;
-  destination: {
-    location: Location;
-  };
+  stationManager: string;
+  stationManagerCode: string;
 }
