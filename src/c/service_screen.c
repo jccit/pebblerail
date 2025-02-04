@@ -1,5 +1,6 @@
 #include "service_screen.h"
 #include "data.h"
+#include "departures_screen.h"
 
 static Window *s_window;
 static StatusBarLayer *s_status_bar;
@@ -19,7 +20,8 @@ static uint8_t s_available_calling_points = 0;
 
 typedef enum
 {
-  MENU_ACTION_PIN = 1
+  MENU_ACTION_VIEW_DEPARTURES = 1,
+  MENU_ACTION_PIN = 2
 } ServiceMenuAction;
 
 static void action_performed_callback(ActionMenu *action_menu, const ActionMenuItem *action, void *context)
@@ -27,7 +29,11 @@ static void action_performed_callback(ActionMenu *action_menu, const ActionMenuI
   ServiceMenuAction selected_action = (ServiceMenuAction)action_menu_item_get_action_data(action);
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Selected action: %d", selected_action);
 
-  if (selected_action == MENU_ACTION_PIN)
+  if (selected_action == MENU_ACTION_VIEW_DEPARTURES)
+  {
+    departures_screen_init(s_calling_points[s_selected_calling_point_index].crs);
+  }
+  else if (selected_action == MENU_ACTION_PIN)
   {
     pin_calling_point(s_service_id, s_calling_points[s_selected_calling_point_index].crs, true);
   }
@@ -167,6 +173,7 @@ static void init_action_menu()
 {
   s_root_level = action_menu_level_create(ACTION_MENU_NUM_ITEMS);
 
+  action_menu_level_add_action(s_root_level, "View departures", action_performed_callback, (void *)MENU_ACTION_VIEW_DEPARTURES);
   action_menu_level_add_action(s_root_level, "Pin to timeline", action_performed_callback, (void *)MENU_ACTION_PIN);
 }
 
