@@ -4,7 +4,7 @@
 
 struct DepartureEntry
 {
-  char serviceID[10];
+  char serviceID[20];
   char destination[30];
   char departureTime[6];
   char platform[3];

@@ -1,16 +1,15 @@
-#include "departures_screen.h"
-#include "data.h"
 #include "service_screen.h"
+#include "data.h"
 
 static Window *s_window;
 static StatusBarLayer *s_status_bar;
 static MenuLayer *s_menu_layer;
-static char *s_crs;
+static char *s_service_id;
 
-#define MAX_DEPARTURE_COUNT 10
-static struct DepartureEntry s_departures[MAX_DEPARTURE_COUNT];
-static uint8_t s_departure_count = 0;
-static uint8_t s_available_departures = 0;
+#define MAX_CALLING_POINT_COUNT 30
+static struct CallingPointEntry s_calling_points[MAX_CALLING_POINT_COUNT];
+static uint8_t s_calling_point_count = 0;
+static uint8_t s_available_calling_points = 0;
 
 // ------ MENU LAYER CALLBACKS ------
 
@@ -21,40 +20,40 @@ static uint16_t menu_get_num_sections_callback(MenuLayer *menu_layer, void *data
 
 static uint16_t menu_get_num_rows_callback(MenuLayer *menu_layer, uint16_t section_index, void *data)
 {
-  return s_departure_count;
+  return s_calling_point_count;
 }
 
 static void menu_draw_row_callback(GContext *ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data)
 {
-  char combined_text[32];
   int index = cell_index->row;
-  char *platform_display = s_departures[index].platform;
+  // char combined_text[32];
+  // char *platform_display = s_calling_points[index].platform;
 
-  if (strcmp(platform_display, "-1") == 0)
-  {
-    platform_display = "unknown";
-  }
+  // if (strcmp(platform_display, "-1") == 0)
+  // {
+  //   platform_display = "unknown";
+  // }
 
-  snprintf(combined_text, sizeof(combined_text), "%s - Platform %s",
-           s_departures[index].departureTime,
-           platform_display);
+  // snprintf(combined_text, sizeof(combined_text), "%s - Platform %s",
+  //          s_calling_points[index].departureTime,
+  //          platform_display);
 
-  menu_cell_basic_draw(ctx, cell_layer, s_departures[index].destination, combined_text, NULL);
+  menu_cell_basic_draw(ctx, cell_layer, s_calling_points[index].destination, s_calling_points[index].departureTime, NULL);
 }
 
 static void menu_draw_header_callback(GContext *ctx, const Layer *cell_layer, uint16_t section_index, void *data)
 {
-  menu_cell_basic_header_draw(ctx, cell_layer, "Departures");
+  menu_cell_basic_header_draw(ctx, cell_layer, "Service info");
 }
 
 static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data)
 {
-  service_screen_init(s_departures[cell_index->row].serviceID);
+  // TODO: Implement
 }
 
 // ------ END MENU LAYER CALLBACKS ------
 
-static void departures_callback(DictionaryIterator *iter)
+static void service_callback(DictionaryIterator *iter)
 {
   Tuple *count_tuple = dict_find(iter, MESSAGE_KEY_count);
   if (!count_tuple)
@@ -64,17 +63,8 @@ static void departures_callback(DictionaryIterator *iter)
   }
 
   uint8_t count = count_tuple->value->uint8;
-  s_available_departures = count > MAX_DEPARTURE_COUNT ? MAX_DEPARTURE_COUNT : count;
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Set available departures to %d", s_available_departures);
-
-  Tuple *serviceID_tuple = dict_find(iter, MESSAGE_KEY_serviceID);
-  if (!serviceID_tuple)
-  {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "No serviceID data received");
-    return;
-  }
-
-  char *serviceID = serviceID_tuple->value->cstring;
+  s_available_calling_points = count > MAX_CALLING_POINT_COUNT ? MAX_CALLING_POINT_COUNT : count;
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Set available calling points to %d", s_available_calling_points);
 
   Tuple *locationName_tuple = dict_find(iter, MESSAGE_KEY_locationName);
   if (!locationName_tuple)
@@ -100,39 +90,36 @@ static void departures_callback(DictionaryIterator *iter)
   }
   char *platform = platform_tuple->value->cstring;
 
-  strncpy(s_departures[s_departure_count].destination, locationName, sizeof(s_departures[s_departure_count].destination) - 1);
-  s_departures[s_departure_count].destination[sizeof(s_departures[s_departure_count].destination) - 1] = '\0';
+  strncpy(s_calling_points[s_calling_point_count].destination, locationName, sizeof(s_calling_points[s_calling_point_count].destination) - 1);
+  s_calling_points[s_calling_point_count].destination[sizeof(s_calling_points[s_calling_point_count].destination) - 1] = '\0';
 
-  strncpy(s_departures[s_departure_count].departureTime, time, sizeof(s_departures[s_departure_count].departureTime) - 1);
-  s_departures[s_departure_count].departureTime[sizeof(s_departures[s_departure_count].departureTime) - 1] = '\0';
+  strncpy(s_calling_points[s_calling_point_count].departureTime, time, sizeof(s_calling_points[s_calling_point_count].departureTime) - 1);
+  s_calling_points[s_calling_point_count].departureTime[sizeof(s_calling_points[s_calling_point_count].departureTime) - 1] = '\0';
 
-  strncpy(s_departures[s_departure_count].platform, platform, sizeof(s_departures[s_departure_count].platform) - 1);
-  s_departures[s_departure_count].platform[sizeof(s_departures[s_departure_count].platform) - 1] = '\0';
+  strncpy(s_calling_points[s_calling_point_count].platform, platform, sizeof(s_calling_points[s_calling_point_count].platform) - 1);
+  s_calling_points[s_calling_point_count].platform[sizeof(s_calling_points[s_calling_point_count].platform) - 1] = '\0';
 
-  strncpy(s_departures[s_departure_count].serviceID, serviceID, sizeof(s_departures[s_departure_count].serviceID) - 1);
-  s_departures[s_departure_count].serviceID[sizeof(s_departures[s_departure_count].serviceID) - 1] = '\0';
+  s_calling_point_count++;
 
-  s_departure_count++;
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Received calling point %d: %s, %s, %s", s_calling_point_count, s_calling_points[s_calling_point_count - 1].destination, s_calling_points[s_calling_point_count - 1].departureTime, s_calling_points[s_calling_point_count - 1].platform);
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Received departure %d: %s, %s, %s, %s", s_departure_count, s_departures[s_departure_count - 1].serviceID, s_departures[s_departure_count - 1].destination, s_departures[s_departure_count - 1].departureTime, s_departures[s_departure_count - 1].platform);
-
-  if (s_departure_count == s_available_departures)
+  if (s_calling_point_count == s_available_calling_points)
   {
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Received all %d departures", s_available_departures);
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Received all %d calling points", s_available_calling_points);
     menu_layer_reload_data(s_menu_layer);
     layer_mark_dirty(menu_layer_get_layer(s_menu_layer));
   }
 }
 
-void load_departures()
+void load_service()
 {
-  s_departure_count = 0;
+  s_calling_point_count = 0;
 
-  set_departures_callback(departures_callback);
-  request_departures(s_crs);
+  set_service_callback(service_callback);
+  request_service(s_service_id);
 }
 
-void departures_window_load(Window *window)
+void service_window_load(Window *window)
 {
   s_status_bar = status_bar_layer_create();
 
@@ -155,26 +142,26 @@ void departures_window_load(Window *window)
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Station screen initialized");
 }
 
-void departures_window_unload(Window *window)
+void service_window_unload(Window *window)
 {
-  departures_screen_deinit();
+  service_screen_deinit();
 }
 
-void departures_screen_init(char *crs)
+void service_screen_init(char *service_id)
 {
-  s_crs = crs;
+  s_service_id = service_id;
   s_window = window_create();
   window_set_window_handlers(s_window, (WindowHandlers){
-                                           .load = departures_window_load,
-                                           .unload = departures_window_unload,
+                                           .load = service_window_load,
+                                           .unload = service_window_unload,
                                        });
   const bool animated = true;
   window_stack_push(s_window, animated);
 
-  load_departures();
+  load_service();
 }
 
-void departures_screen_deinit()
+void service_screen_deinit()
 {
   menu_layer_destroy(s_menu_layer);
   window_destroy(s_window);

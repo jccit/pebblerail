@@ -5,8 +5,9 @@ import {
   readStationFile,
 } from "./stationFile";
 import { requestLocation, getLocation } from "./location";
-import { sendDepartureList, sendStationList } from "./data";
+import { sendDepartureList, sendServiceInfo, sendStationList } from "./data";
 import { getDepartureBoard } from "./departures";
+import { getServiceInfo } from "./service";
 
 Pebble.addEventListener("ready", (e) => {
   console.log("PKJS ready, sending jsReady message");
@@ -39,7 +40,12 @@ Pebble.addEventListener("appmessage", (e) => {
     case "departures":
       const crs = dict.requestData;
       console.log(`Departures for ${crs} requested`);
-      getDepartures(crs);
+      departures(crs);
+      break;
+    case "serviceInfo":
+      const serviceID = dict.requestData;
+      console.log(`Service info for ${serviceID} requested`);
+      serviceInfo(serviceID);
       break;
     default:
       console.log("Unknown command: " + command);
@@ -77,8 +83,14 @@ function getStationList() {
   });
 }
 
-function getDepartures(crs: string) {
+function departures(crs: string) {
   getDepartureBoard(crs, (departures) => {
     sendDepartureList(departures);
+  });
+}
+
+function serviceInfo(serviceID: string) {
+  getServiceInfo(serviceID, (service) => {
+    sendServiceInfo(service);
   });
 }

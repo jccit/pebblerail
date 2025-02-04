@@ -1,5 +1,5 @@
 import { calculateTime } from "./time";
-import { TrainService } from "./types/service";
+import { TrainService, TrainServiceDetails } from "./types/service";
 import { StationWithDistance } from "./types/station";
 
 function sendItem(items: Record<string, any>, index: number) {
@@ -56,6 +56,31 @@ export function sendDepartureList(departures: TrainService[]) {
   });
 
   console.log(`Sending ${serialised.length} departures`);
+
+  sendItem(serialised, 0);
+}
+
+export function sendServiceInfo(service: TrainServiceDetails) {
+  const callingPoints = service.locations;
+
+  const serialised = callingPoints.map((location) => {
+    const time = calculateTime(location.departure);
+    let timeString = time?.scheduled || "00:00";
+
+    if (time?.isLate) {
+      timeString = `${time.actual} (${time.lateness}m late)`;
+    }
+
+    return {
+      objectType: "serviceInfo",
+      count: callingPoints.length,
+      locationName: location.location.locationName,
+      time: timeString,
+      platform: location.platform || "-1",
+    };
+  });
+
+  console.log(`Sending ${serialised.length} calling points`);
 
   sendItem(serialised, 0);
 }

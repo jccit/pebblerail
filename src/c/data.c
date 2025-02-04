@@ -9,6 +9,7 @@ static CommandType cached_command = COMMAND_TYPE_UNKNOWN;
 
 static void (*s_closest_station_callback)(DictionaryIterator *iter) = NULL;
 static void (*s_departures_callback)(DictionaryIterator *iter) = NULL;
+static void (*s_service_callback)(DictionaryIterator *iter) = NULL;
 
 char *command_type_to_string(CommandType command)
 {
@@ -18,6 +19,8 @@ char *command_type_to_string(CommandType command)
     return "stationList";
   case COMMAND_TYPE_DEPARTURES:
     return "departures";
+  case COMMAND_TYPE_SERVICE:
+    return "serviceInfo";
   default:
     return "unknown";
   }
@@ -109,6 +112,10 @@ void inbox_received_callback(DictionaryIterator *iter, void *context)
     {
       s_departures_callback(iter);
     }
+    else if (strcmp(objectType->value->cstring, "serviceInfo") == 0 && s_service_callback != NULL)
+    {
+      s_service_callback(iter);
+    }
   }
 }
 
@@ -130,6 +137,11 @@ void request_departures(char *crs)
   send_data_request(COMMAND_TYPE_DEPARTURES, crs, strlen(crs));
 }
 
+void request_service(char *service_id)
+{
+  send_data_request(COMMAND_TYPE_SERVICE, service_id, strlen(service_id));
+}
+
 void set_closest_station_callback(void (*callback)(DictionaryIterator *iter))
 {
   s_closest_station_callback = callback;
@@ -138,4 +150,9 @@ void set_closest_station_callback(void (*callback)(DictionaryIterator *iter))
 void set_departures_callback(void (*callback)(DictionaryIterator *iter))
 {
   s_departures_callback = callback;
+}
+
+void set_service_callback(void (*callback)(DictionaryIterator *iter))
+{
+  s_service_callback = callback;
 }
