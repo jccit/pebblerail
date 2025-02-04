@@ -9,6 +9,14 @@ export function readStationFile(buffer: Uint8Array) {
   stationFile = decoded.stations as Record<string, Station>;
 }
 
+export function loadStationFileJSON(json: string) {
+  stationFile = JSON.parse(json);
+}
+
+export function exportStationFileJSON() {
+  return JSON.stringify(stationFile);
+}
+
 export function getStation(id: string) {
   return stationFile?.[id];
 }

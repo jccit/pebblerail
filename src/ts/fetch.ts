@@ -50,6 +50,8 @@ export function postJSON(
 ) {
   const req = new XMLHttpRequest();
 
+  console.log(`POSTing to ${url} with data: ${JSON.stringify(data)}`);
+
   req.onload = () => {
     if (req.status >= 200 && req.status < 300) {
       const json = JSON.parse(req.responseText);

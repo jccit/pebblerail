@@ -14,6 +14,8 @@ interface PebbleKitJS {
     successCallback: (e: any) => void,
     errorCallback: (e: any) => void
   ): void;
+
+  showSimpleNotificationOnPebble(title: string, body: string): void;
 }
 
 interface AppMessageEvent {
