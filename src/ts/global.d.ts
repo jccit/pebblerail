@@ -9,6 +9,11 @@ interface PebbleKitJS {
     successCallback: (e: any) => void,
     errorCallback: (e: any) => void
   ): void;
+
+  getTimelineToken(
+    successCallback: (e: any) => void,
+    errorCallback: (e: any) => void
+  ): void;
 }
 
 interface AppMessageEvent {

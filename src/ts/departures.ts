@@ -1,3 +1,4 @@
+import { config } from "./config";
 import { fetchJSON } from "./fetch";
 import { DepartureBoard } from "./types/departureBoard";
 import { TrainService } from "./types/service";
@@ -7,7 +8,7 @@ export function getDepartureBoard(
   callback: (departures: TrainService[]) => void
 ) {
   fetchJSON(
-    `https://rail-app-tau.vercel.app/api/departures/${crs}`,
+    `${config.service}/api/departures/${crs}`,
     (err, response: DepartureBoard) => {
       if (err) {
         console.error("Error fetching departures", err);

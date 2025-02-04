@@ -159,9 +159,9 @@ void set_service_callback(void (*callback)(DictionaryIterator *iter))
   s_service_callback = callback;
 }
 
-void pin_calling_point(char *service_id, char *crs)
+void pin_calling_point(char *service_id, char *crs, bool isArrival)
 {
   char combined[256];
-  snprintf(combined, sizeof(combined), "%s;%s", service_id, crs);
+  snprintf(combined, sizeof(combined), "%s;%s;%s", service_id, crs, isArrival ? "arrival" : "departure");
   send_data_request(COMMAND_TYPE_PIN_CALLING_POINT, combined, strlen(combined));
 }

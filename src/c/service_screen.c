@@ -29,7 +29,7 @@ static void action_performed_callback(ActionMenu *action_menu, const ActionMenuI
 
   if (selected_action == MENU_ACTION_PIN)
   {
-    pin_calling_point(s_service_id, s_calling_points[s_selected_calling_point_index].crs);
+    pin_calling_point(s_service_id, s_calling_points[s_selected_calling_point_index].crs, true);
   }
 }
 

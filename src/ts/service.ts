@@ -1,3 +1,4 @@
+import { config } from "./config";
 import { fetchJSON } from "./fetch";
 import { TrainServiceDetails } from "./types/service";
 
@@ -6,7 +7,7 @@ export function getServiceInfo(
   callback: (service: TrainServiceDetails) => void
 ) {
   fetchJSON(
-    `https://rail-app-tau.vercel.app/api/service/${serviceID}`,
+    `${config.service}/api/service/${serviceID}`,
     (err, response: TrainServiceDetails) => {
       if (err) {
         console.error("Error fetching service info", err);

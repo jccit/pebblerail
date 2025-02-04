@@ -22,4 +22,4 @@ void request_departures(char *crs);
 void set_service_callback(void (*callback)(DictionaryIterator *iter));
 void request_service(char *service_id);
 
-void pin_calling_point(char *service_id, char *crs);
+void pin_calling_point(char *service_id, char *crs, bool isArrival);

@@ -8,6 +8,7 @@ import { requestLocation, getLocation } from "./location";
 import { sendDepartureList, sendServiceInfo, sendStationList } from "./data";
 import { getDepartureBoard } from "./departures";
 import { getServiceInfo } from "./service";
+import { pinCallingPoint } from "./timeline";
 
 Pebble.addEventListener("ready", (e) => {
   console.log("PKJS ready, sending jsReady message");
@@ -48,7 +49,11 @@ Pebble.addEventListener("appmessage", (e) => {
       serviceInfo(serviceID);
       break;
     case "pinCallingPoint":
-      console.log(`Pinning calling point ${dict.requestData}`);
+      const [pinServiceID, pinCrs, type] = dict.requestData.split(";");
+      console.log(
+        `Pinning calling point ${pinCrs} for service ${pinServiceID}`
+      );
+      pinCallingPoint(pinServiceID, pinCrs, type);
       break;
     default:
       console.log("Unknown command: " + command);

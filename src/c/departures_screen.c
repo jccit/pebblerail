@@ -35,7 +35,7 @@ static void action_performed_callback(ActionMenu *action_menu, const ActionMenuI
   }
   else if (selected_action == MENU_ACTION_PIN)
   {
-    pin_calling_point(s_departures[s_selected_departure_index].serviceID, s_crs);
+    pin_calling_point(s_departures[s_selected_departure_index].serviceID, s_crs, false);
   }
 }
 
