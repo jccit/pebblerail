@@ -6,10 +6,32 @@ static StatusBarLayer *s_status_bar;
 static MenuLayer *s_menu_layer;
 static char *s_service_id;
 
+#define ACTION_MENU_NUM_ITEMS 1
+static ActionMenu *s_action_menu;
+static ActionMenuLevel *s_root_level;
+static GColor s_color, s_visible_color;
+static uint8_t s_selected_calling_point_index = 0;
+
 #define MAX_CALLING_POINT_COUNT 30
 static struct CallingPointEntry s_calling_points[MAX_CALLING_POINT_COUNT];
 static uint8_t s_calling_point_count = 0;
 static uint8_t s_available_calling_points = 0;
+
+typedef enum
+{
+  MENU_ACTION_PIN = 1
+} ServiceMenuAction;
+
+static void action_performed_callback(ActionMenu *action_menu, const ActionMenuItem *action, void *context)
+{
+  ServiceMenuAction selected_action = (ServiceMenuAction)action_menu_item_get_action_data(action);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Selected action: %d", selected_action);
+
+  if (selected_action == MENU_ACTION_PIN)
+  {
+    pin_calling_point(s_service_id, s_calling_points[s_selected_calling_point_index].crs);
+  }
+}
 
 // ------ MENU LAYER CALLBACKS ------
 
@@ -48,7 +70,18 @@ static void menu_draw_header_callback(GContext *ctx, const Layer *cell_layer, ui
 
 static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data)
 {
-  // TODO: Implement
+  // Configure the ActionMenu Window about to be shown
+  ActionMenuConfig config = (ActionMenuConfig){
+      .root_level = s_root_level,
+      .colors = {
+          .background = s_color,
+          .foreground = s_visible_color,
+      },
+      .align = ActionMenuAlignCenter};
+
+  // Show the ActionMenu
+  s_selected_calling_point_index = cell_index->row;
+  s_action_menu = action_menu_open(&config);
 }
 
 // ------ END MENU LAYER CALLBACKS ------
@@ -90,6 +123,14 @@ static void service_callback(DictionaryIterator *iter)
   }
   char *platform = platform_tuple->value->cstring;
 
+  Tuple *crs_tuple = dict_find(iter, MESSAGE_KEY_crs);
+  if (!crs_tuple)
+  {
+    APP_LOG(APP_LOG_LEVEL_ERROR, "No crs data received");
+    return;
+  }
+  char *crs = crs_tuple->value->cstring;
+
   strncpy(s_calling_points[s_calling_point_count].destination, locationName, sizeof(s_calling_points[s_calling_point_count].destination) - 1);
   s_calling_points[s_calling_point_count].destination[sizeof(s_calling_points[s_calling_point_count].destination) - 1] = '\0';
 
@@ -98,6 +139,9 @@ static void service_callback(DictionaryIterator *iter)
 
   strncpy(s_calling_points[s_calling_point_count].platform, platform, sizeof(s_calling_points[s_calling_point_count].platform) - 1);
   s_calling_points[s_calling_point_count].platform[sizeof(s_calling_points[s_calling_point_count].platform) - 1] = '\0';
+
+  strncpy(s_calling_points[s_calling_point_count].crs, crs, sizeof(s_calling_points[s_calling_point_count].crs) - 1);
+  s_calling_points[s_calling_point_count].crs[sizeof(s_calling_points[s_calling_point_count].crs) - 1] = '\0';
 
   s_calling_point_count++;
 
@@ -117,6 +161,13 @@ void load_service()
 
   set_service_callback(service_callback);
   request_service(s_service_id);
+}
+
+static void init_action_menu()
+{
+  s_root_level = action_menu_level_create(ACTION_MENU_NUM_ITEMS);
+
+  action_menu_level_add_action(s_root_level, "Pin to timeline", action_performed_callback, (void *)MENU_ACTION_PIN);
 }
 
 void service_window_load(Window *window)
@@ -149,6 +200,9 @@ void service_window_unload(Window *window)
 
 void service_screen_init(char *service_id)
 {
+  s_color = GColorBlue;
+  s_visible_color = gcolor_legible_over(s_color);
+
   s_service_id = service_id;
   s_window = window_create();
   window_set_window_handlers(s_window, (WindowHandlers){
@@ -159,6 +213,7 @@ void service_screen_init(char *service_id)
   window_stack_push(s_window, animated);
 
   load_service();
+  init_action_menu();
 }
 
 void service_screen_deinit()

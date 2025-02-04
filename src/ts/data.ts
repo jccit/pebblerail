@@ -75,6 +75,7 @@ export function sendServiceInfo(service: TrainServiceDetails) {
       objectType: "serviceInfo",
       count: callingPoints.length,
       locationName: location.location.locationName,
+      crs: location.location.crs,
       time: timeString,
       platform: location.platform || "-1",
     };

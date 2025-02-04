@@ -21,6 +21,8 @@ char *command_type_to_string(CommandType command)
     return "departures";
   case COMMAND_TYPE_SERVICE:
     return "serviceInfo";
+  case COMMAND_TYPE_PIN_CALLING_POINT:
+    return "pinCallingPoint";
   default:
     return "unknown";
   }
@@ -155,4 +157,11 @@ void set_departures_callback(void (*callback)(DictionaryIterator *iter))
 void set_service_callback(void (*callback)(DictionaryIterator *iter))
 {
   s_service_callback = callback;
+}
+
+void pin_calling_point(char *service_id, char *crs)
+{
+  char combined[256];
+  snprintf(combined, sizeof(combined), "%s;%s", service_id, crs);
+  send_data_request(COMMAND_TYPE_PIN_CALLING_POINT, combined, strlen(combined));
 }

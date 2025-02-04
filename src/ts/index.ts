@@ -47,6 +47,9 @@ Pebble.addEventListener("appmessage", (e) => {
       console.log(`Service info for ${serviceID} requested`);
       serviceInfo(serviceID);
       break;
+    case "pinCallingPoint":
+      console.log(`Pinning calling point ${dict.requestData}`);
+      break;
     default:
       console.log("Unknown command: " + command);
       break;

@@ -7,10 +7,37 @@ static StatusBarLayer *s_status_bar;
 static MenuLayer *s_menu_layer;
 static char *s_crs;
 
+#define ACTION_MENU_NUM_ITEMS 2
+static ActionMenu *s_action_menu;
+static ActionMenuLevel *s_root_level;
+static GColor s_color, s_visible_color;
+static uint8_t s_selected_departure_index = 0;
+
 #define MAX_DEPARTURE_COUNT 10
 static struct DepartureEntry s_departures[MAX_DEPARTURE_COUNT];
 static uint8_t s_departure_count = 0;
 static uint8_t s_available_departures = 0;
+
+typedef enum
+{
+  MENU_ACTION_VIEW_STOPS = 1,
+  MENU_ACTION_PIN = 2
+} DepartureMenuAction;
+
+static void action_performed_callback(ActionMenu *action_menu, const ActionMenuItem *action, void *context)
+{
+  DepartureMenuAction selected_action = (DepartureMenuAction)action_menu_item_get_action_data(action);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Selected action: %d", selected_action);
+
+  if (selected_action == MENU_ACTION_VIEW_STOPS)
+  {
+    service_screen_init(s_departures[s_selected_departure_index].serviceID);
+  }
+  else if (selected_action == MENU_ACTION_PIN)
+  {
+    pin_calling_point(s_departures[s_selected_departure_index].serviceID, s_crs);
+  }
+}
 
 // ------ MENU LAYER CALLBACKS ------
 
@@ -49,7 +76,18 @@ static void menu_draw_header_callback(GContext *ctx, const Layer *cell_layer, ui
 
 static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data)
 {
-  service_screen_init(s_departures[cell_index->row].serviceID);
+  // Configure the ActionMenu Window about to be shown
+  ActionMenuConfig config = (ActionMenuConfig){
+      .root_level = s_root_level,
+      .colors = {
+          .background = s_color,
+          .foreground = s_visible_color,
+      },
+      .align = ActionMenuAlignCenter};
+
+  // Show the ActionMenu
+  s_selected_departure_index = cell_index->row;
+  s_action_menu = action_menu_open(&config);
 }
 
 // ------ END MENU LAYER CALLBACKS ------
@@ -155,6 +193,14 @@ void departures_window_load(Window *window)
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Station screen initialized");
 }
 
+static void init_action_menu()
+{
+  s_root_level = action_menu_level_create(ACTION_MENU_NUM_ITEMS);
+
+  action_menu_level_add_action(s_root_level, "View stops", action_performed_callback, (void *)MENU_ACTION_VIEW_STOPS);
+  action_menu_level_add_action(s_root_level, "Pin to timeline", action_performed_callback, (void *)MENU_ACTION_PIN);
+}
+
 void departures_window_unload(Window *window)
 {
   departures_screen_deinit();
@@ -162,6 +208,9 @@ void departures_window_unload(Window *window)
 
 void departures_screen_init(char *crs)
 {
+  s_color = GColorBlue;
+  s_visible_color = gcolor_legible_over(s_color);
+
   s_crs = crs;
   s_window = window_create();
   window_set_window_handlers(s_window, (WindowHandlers){
@@ -172,6 +221,7 @@ void departures_screen_init(char *crs)
   window_stack_push(s_window, animated);
 
   load_departures();
+  init_action_menu();
 }
 
 void departures_screen_deinit()
