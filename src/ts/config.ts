@@ -3,5 +3,5 @@ interface Config {
 }
 
 export const config: Config = {
-  service: "https://rail-app-tau.vercel.app",
+  service: "https://rail.j621.net",
 };
