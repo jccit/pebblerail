@@ -14,7 +14,6 @@ static char *s_stationName;
 #define ACTION_MENU_NUM_ITEMS 2
 static ActionMenu *s_action_menu;
 static ActionMenuLevel *s_root_level;
-static GColor s_color, s_visible_color;
 static uint8_t s_selected_departure_index = 0;
 
 #define MAX_DEPARTURE_COUNT 10
@@ -89,8 +88,8 @@ static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_in
   ActionMenuConfig config = (ActionMenuConfig){
       .root_level = s_root_level,
       .colors = {
-          .background = s_color,
-          .foreground = s_visible_color,
+          .background = GColorBlack,
+          .foreground = GColorWhite,
       },
       .align = ActionMenuAlignCenter};
 
@@ -234,9 +233,6 @@ void departures_window_unload(Window *window)
 
 void departures_screen_init(char *crs, char *stationName)
 {
-  s_color = GColorBlue;
-  s_visible_color = gcolor_legible_over(s_color);
-
   s_crs = crs;
   s_stationName = stationName;
   s_window = window_create();

@@ -17,7 +17,6 @@ static char *s_destination;
 #define ACTION_MENU_NUM_ITEMS 2
 static ActionMenu *s_action_menu;
 static ActionMenuLevel *s_root_level;
-static GColor s_color, s_visible_color;
 static uint8_t s_selected_calling_point_index = 0;
 
 #define MAX_CALLING_POINT_COUNT 30
@@ -88,8 +87,8 @@ static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_in
   ActionMenuConfig config = (ActionMenuConfig){
       .root_level = s_root_level,
       .colors = {
-          .background = s_color,
-          .foreground = s_visible_color,
+          .background = GColorBlack,
+          .foreground = GColorWhite,
       },
       .align = ActionMenuAlignCenter};
 
@@ -235,9 +234,6 @@ void service_window_unload(Window *window)
 
 void service_screen_init(char *service_id)
 {
-  s_color = GColorBlue;
-  s_visible_color = gcolor_legible_over(s_color);
-
   s_service_id = service_id;
   s_window = window_create();
   window_set_window_handlers(s_window, (WindowHandlers){
