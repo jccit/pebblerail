@@ -38,7 +38,34 @@
       "platform"
     ],
     "resources": {
-      "media": []
+      "media": [
+        {
+          "type": "raw",
+          "name": "TRAIN_TINY",
+          "file": "train_tiny.pdc"
+        },
+        {
+          "type": "raw",
+          "name": "TRAIN_SMALL",
+          "file": "train_small.pdc"
+        },
+        {
+          "type": "raw",
+          "name": "TRAIN_LARGE",
+          "file": "train_large.pdc"
+        }
+      ],
+      "publishedMedia": [
+        {
+          "name": "TRAIN",
+          "id": 1,
+          "timeline": {
+            "tiny": "TRAIN_TINY",
+            "small": "TRAIN_SMALL",
+            "large": "TRAIN_LARGE"
+          }
+        }
+      ]
     },
     "capabilities": [
       "location"

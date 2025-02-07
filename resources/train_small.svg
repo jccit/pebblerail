@@ -1,0 +1,83 @@
+<svg
+   width="50"
+   height="50"
+   version="1.1"
+   viewBox="0 0 50 50"
+   id="svg9"
+   xmlns="http://www.w3.org/2000/svg">
+  <path
+     d="m 42.162244,15.908162 v 14.142857 l -6.061225,14.142858 -4.040816,2.020408 H 17.917346 L 13.87653,44.193877 7.815305,30.051019 V 15.908162 l 8.081633,-8.0816325 h 18.183673 z"
+     fill="#ffffff"
+     stroke="#000000"
+     stroke-linecap="round"
+     stroke-linejoin="round"
+     stroke-width="2"
+     id="path1"/>
+  <path
+     d="m 17.917346,32.071428 h 2.020408 l 2.020408,2.020408 v 2.020408 l -2.020408,2.020408 h -2.020408 l -2.020408,-2.020408 v -2.020408 z"
+     stroke-linejoin="round"
+     stroke-linecap="round"
+     fill="none"
+     stroke="#000000"
+     stroke-width="2"
+     id="path2"
+      />
+  <path
+     d="m 30.039795,32.071428 h 2.020408 l 2.020408,2.020408 v 2.020408 l -2.020408,2.020408 h -2.020408 l -2.020408,-2.020408 v -2.020408 z"
+     stroke-linejoin="round"
+     stroke-linecap="round"
+     fill="none"
+     stroke="#000000"
+     stroke-width="2"
+     id="path3"
+      />
+  <path
+     d="m 36.101019,44.193877 -8e-6,4.040816"
+     stroke-linecap="round"
+     fill="none"
+     stroke="#000000"
+     stroke-width="2"
+     id="path4"
+      />
+  <path
+     d="m 13.87653,44.193877 v 4.040816"
+     stroke-linecap="round"
+     fill="none"
+     stroke="#000000"
+     stroke-width="2"
+     id="path5"
+      />
+  <path
+     d="M 13.87653,1.765305 H 36.101019"
+     stroke-linecap="round"
+     fill="none"
+     stroke="#000000"
+     stroke-width="2"
+     id="path6"
+      />
+  <path
+     d="m 17.917346,1.765305 4.040816,6.0612245"
+     stroke-linecap="round"
+     fill="none"
+     stroke="#000000"
+     stroke-width="2"
+     id="path7"
+      />
+  <path
+     d="M 32.706734,1.765305 28.020195,7.8265295"
+     stroke-linecap="round"
+     fill="none"
+     stroke="#000000"
+     stroke-width="2"
+     id="path8"
+      />
+  <path
+     d="m 13.87653,21.969387 2.020408,4.040816 h 18.183673 l 2.020408,-4.040816 -2.020408,-6.061225 -4.040816,-2.020408 H 19.937754 l -4.040816,2.020408 z"
+     stroke-linecap="round"
+     fill="none"
+     stroke="#000000"
+     stroke-width="2"
+     stroke-linejoin="round"
+     id="path9"
+      />
+</svg>
