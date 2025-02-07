@@ -123,7 +123,12 @@ void station_window_load(Window *window)
 
   menu_layer_set_click_config_onto_window(s_menu_layer, window);
 
+#ifdef PBL_ROUND
+  // Centre the spinner on round screens
+  s_spinner_layer = spinner_layer_init(bounds);
+#else
   s_spinner_layer = spinner_layer_init(bounds_without_status_bar);
+#endif
 
   layer_add_child(window_layer, menu_layer_get_layer(s_menu_layer));
   layer_add_child(window_layer, s_spinner_layer);

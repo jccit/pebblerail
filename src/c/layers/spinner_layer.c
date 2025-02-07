@@ -31,13 +31,22 @@ void spinner_layer_update_proc(Layer *layer, GContext *ctx)
   int angle_end = DEG_TO_TRIGANGLE(spinner_data->angle + spinner_angle_gap);
 
   // Draw the background arc
+#ifdef PBL_BW
+  graphics_context_set_fill_color(ctx, GColorBlack);
+  graphics_draw_arc(ctx, spinner_data->bounds, GOvalScaleModeFitCircle, angle_zero, angle_full);
+#else
   graphics_context_set_fill_color(ctx, GColorLightGray);
-  // graphics_draw_arc(ctx, spinner_data->bounds, GOvalScaleModeFitCircle, angle_zero, angle_full);
   graphics_fill_radial(ctx, spinner_data->bounds, GOvalScaleModeFitCircle, spinner_line_width, angle_zero, angle_full);
+#endif
 
   // Draw the loading arc
   graphics_context_set_fill_color(ctx, GColorBlack);
   graphics_fill_radial(ctx, spinner_data->bounds, GOvalScaleModeFitCircle, spinner_line_width, angle_start, angle_end);
+
+  GRect text_bounds = GRect(0, spinner_data->center.y + spinner_radius + 5, PBL_DISPLAY_WIDTH, 30);
+  GFont font = fonts_get_system_font(FONT_KEY_GOTHIC_18);
+  graphics_context_set_text_color(ctx, GColorBlack);
+  graphics_draw_text(ctx, "Loading...", font, text_bounds, GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
 }
 
 void spinner_timer_callback(void *context)
