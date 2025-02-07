@@ -88,8 +88,8 @@ static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_in
   ActionMenuConfig config = (ActionMenuConfig){
       .root_level = s_root_level,
       .colors = {
-          .background = GColorBlack,
-          .foreground = GColorWhite,
+          .background = GColorWhite,
+          .foreground = GColorBlack,
       },
       .align = ActionMenuAlignCenter};
 
