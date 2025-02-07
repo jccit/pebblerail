@@ -4,6 +4,7 @@
 #include "../layers/spinner_layer.h"
 #include "../layers/status_bar.h"
 #include "../layers/menu_header.h"
+#include "../layers/journey_item.h"
 
 static Window *s_window;
 static StatusBarLayer *s_status_bar;
@@ -59,20 +60,13 @@ static uint16_t menu_get_num_rows_callback(MenuLayer *menu_layer, uint16_t secti
 
 static void menu_draw_row_callback(GContext *ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data)
 {
+#ifdef PBL_ROUND
   int index = cell_index->row;
-  // char combined_text[32];
-  // char *platform_display = s_calling_points[index].platform;
-
-  // if (strcmp(platform_display, "-1") == 0)
-  // {
-  //   platform_display = "unknown";
-  // }
-
-  // snprintf(combined_text, sizeof(combined_text), "%s - Platform %s",
-  //          s_calling_points[index].departureTime,
-  //          platform_display);
-
   menu_cell_basic_draw(ctx, cell_layer, s_calling_points[index].destination, s_calling_points[index].departureTime, NULL);
+#else
+  int index = cell_index->row;
+  journey_item_draw(ctx, cell_layer, s_calling_points[index].crs == s_origin, &s_calling_points[index]);
+#endif
 }
 
 static void menu_draw_header_callback(GContext *ctx, const Layer *cell_layer, uint16_t section_index, void *data)

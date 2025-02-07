@@ -11,6 +11,30 @@ typedef enum
   COMMAND_TYPE_PIN_CALLING_POINT = 4
 } CommandType;
 
+typedef struct CallingPointEntry
+{
+  char destination[30];
+  char departureTime[20];
+  char platform[3];
+  char crs[4];
+} CallingPointEntry;
+
+typedef struct Station
+{
+  char name[30];
+  char crs[4];
+  char distance[9];
+} Station;
+
+typedef struct DepartureEntry
+{
+  char serviceID[20];
+  char destination[30];
+  char departureTime[6];
+  char platform[3];
+} DepartureEntry;
+
+
 void data_init();
 
 void set_closest_station_callback(void (*callback)(DictionaryIterator *iter));

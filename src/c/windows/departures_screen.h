@@ -2,13 +2,5 @@
 
 #include <pebble.h>
 
-struct DepartureEntry
-{
-  char serviceID[20];
-  char destination[30];
-  char departureTime[6];
-  char platform[3];
-};
-
 void departures_screen_init(char *crs, char *stationName);
 void departures_screen_deinit();
