@@ -10,5 +10,5 @@ struct DepartureEntry
   char platform[3];
 };
 
-void departures_screen_init(char *crs);
+void departures_screen_init(char *crs, char *stationName);
 void departures_screen_deinit();

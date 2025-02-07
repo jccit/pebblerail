@@ -9,8 +9,10 @@ static StatusBarLayer *s_status_bar;
 static MenuLayer *s_menu_layer;
 static Layer *s_spinner_layer;
 static char *s_service_id;
+static char *s_origin;
+static char *s_destination;
 
-#define ACTION_MENU_NUM_ITEMS 1
+#define ACTION_MENU_NUM_ITEMS 2
 static ActionMenu *s_action_menu;
 static ActionMenuLevel *s_root_level;
 static GColor s_color, s_visible_color;
@@ -34,7 +36,7 @@ static void action_performed_callback(ActionMenu *action_menu, const ActionMenuI
 
   if (selected_action == MENU_ACTION_VIEW_DEPARTURES)
   {
-    departures_screen_init(s_calling_points[s_selected_calling_point_index].crs);
+    departures_screen_init(s_calling_points[s_selected_calling_point_index].crs, s_calling_points[s_selected_calling_point_index].destination);
   }
   else if (selected_action == MENU_ACTION_PIN)
   {
@@ -74,7 +76,15 @@ static void menu_draw_row_callback(GContext *ctx, const Layer *cell_layer, MenuI
 
 static void menu_draw_header_callback(GContext *ctx, const Layer *cell_layer, uint16_t section_index, void *data)
 {
-  menu_cell_basic_header_draw(ctx, cell_layer, "Service info");
+  char combined_text[32];
+  snprintf(combined_text, sizeof(combined_text), "%s -> %s", s_origin, s_destination);
+
+  menu_cell_basic_header_draw(ctx, cell_layer, combined_text);
+}
+
+static int16_t menu_get_header_height_callback(MenuLayer *menu_layer, uint16_t section_index, void *data)
+{
+  return 20;
 }
 
 static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data)
@@ -161,6 +171,10 @@ static void service_callback(DictionaryIterator *iter)
   if (s_calling_point_count == s_available_calling_points)
   {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Received all %d calling points", s_available_calling_points);
+
+    s_origin = s_calling_points[0].crs;
+    s_destination = s_calling_points[s_available_calling_points - 1].crs;
+
     menu_layer_reload_data(s_menu_layer);
     layer_set_hidden(menu_layer_get_layer(s_menu_layer), false);
     layer_mark_dirty(menu_layer_get_layer(s_menu_layer));
@@ -196,6 +210,7 @@ void service_window_load(Window *window)
   menu_layer_set_callbacks(s_menu_layer, NULL, (MenuLayerCallbacks){
                                                    .get_num_sections = menu_get_num_sections_callback,
                                                    .get_num_rows = menu_get_num_rows_callback,
+                                                   .get_header_height = menu_get_header_height_callback,
                                                    .draw_row = menu_draw_row_callback,
                                                    .draw_header = menu_draw_header_callback,
                                                    .select_click = menu_select_click_callback,
@@ -203,12 +218,7 @@ void service_window_load(Window *window)
 
   menu_layer_set_click_config_onto_window(s_menu_layer, window);
 
-#ifdef PBL_ROUND
-  // Centre the spinner on round screens
   s_spinner_layer = spinner_layer_init(bounds);
-#else
-  s_spinner_layer = spinner_layer_init(bounds_without_status_bar);
-#endif
 
   layer_add_child(window_layer, menu_layer_get_layer(s_menu_layer));
   layer_add_child(window_layer, s_spinner_layer);

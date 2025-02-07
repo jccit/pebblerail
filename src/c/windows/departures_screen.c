@@ -9,7 +9,7 @@ static StatusBarLayer *s_status_bar;
 static MenuLayer *s_menu_layer;
 static Layer *s_spinner_layer;
 static char *s_crs;
-
+static char *s_stationName;
 #define ACTION_MENU_NUM_ITEMS 2
 static ActionMenu *s_action_menu;
 static ActionMenuLevel *s_root_level;
@@ -74,7 +74,12 @@ static void menu_draw_row_callback(GContext *ctx, const Layer *cell_layer, MenuI
 
 static void menu_draw_header_callback(GContext *ctx, const Layer *cell_layer, uint16_t section_index, void *data)
 {
-  menu_cell_basic_header_draw(ctx, cell_layer, "Departures");
+  menu_cell_basic_header_draw(ctx, cell_layer, s_stationName);
+}
+
+static int16_t menu_get_header_height_callback(MenuLayer *menu_layer, uint16_t section_index, void *data)
+{
+  return 20;
 }
 
 static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data)
@@ -189,6 +194,7 @@ void departures_window_load(Window *window)
   menu_layer_set_callbacks(s_menu_layer, NULL, (MenuLayerCallbacks){
                                                    .get_num_sections = menu_get_num_sections_callback,
                                                    .get_num_rows = menu_get_num_rows_callback,
+                                                   .get_header_height = menu_get_header_height_callback,
                                                    .draw_row = menu_draw_row_callback,
                                                    .draw_header = menu_draw_header_callback,
                                                    .select_click = menu_select_click_callback,
@@ -196,12 +202,7 @@ void departures_window_load(Window *window)
 
   menu_layer_set_click_config_onto_window(s_menu_layer, window);
 
-#ifdef PBL_ROUND
-  // Centre the spinner on round screens
   s_spinner_layer = spinner_layer_init(bounds);
-#else
-  s_spinner_layer = spinner_layer_init(bounds_without_status_bar);
-#endif
 
   layer_add_child(window_layer, menu_layer_get_layer(s_menu_layer));
   layer_add_child(window_layer, s_spinner_layer);
@@ -222,12 +223,13 @@ void departures_window_unload(Window *window)
   departures_screen_deinit();
 }
 
-void departures_screen_init(char *crs)
+void departures_screen_init(char *crs, char *stationName)
 {
   s_color = GColorBlue;
   s_visible_color = gcolor_legible_over(s_color);
 
   s_crs = crs;
+  s_stationName = stationName;
   s_window = window_create();
   window_set_window_handlers(s_window, (WindowHandlers){
                                            .load = departures_window_load,
