@@ -9,5 +9,5 @@ struct Station
   char distance[9];
 };
 
-void station_screen_init(void (*open_station_callback)(char *crs));
+void station_screen_init();
 void station_screen_deinit();

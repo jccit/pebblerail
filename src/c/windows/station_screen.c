@@ -1,6 +1,8 @@
 #include "station_screen.h"
+#include "departures_screen.h"
 #include "../data.h"
 #include "../layers/spinner_layer.h"
+
 static Window *s_window;
 static StatusBarLayer *s_status_bar;
 static Layer *s_spinner_layer;
@@ -9,8 +11,6 @@ static MenuLayer *s_menu_layer;
 #define STATION_COUNT 5
 static struct Station s_stations[STATION_COUNT];
 static uint8_t s_station_count = 0;
-
-static void (*s_open_station_callback)(char *crs);
 
 // ------ MENU LAYER CALLBACKS ------
 
@@ -36,7 +36,8 @@ static void menu_draw_header_callback(GContext *ctx, const Layer *cell_layer, ui
 
 static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data)
 {
-  s_open_station_callback(s_stations[cell_index->row].crs);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Showing departures for %s", s_stations[cell_index->row].crs);
+  departures_screen_init(s_stations[cell_index->row].crs);
 }
 
 // ------ END MENU LAYER CALLBACKS ------
@@ -136,9 +137,8 @@ void station_window_unload(Window *window)
   station_screen_deinit();
 }
 
-void station_screen_init(void (*open_station_callback)(char *crs))
+void station_screen_init()
 {
-  s_open_station_callback = open_station_callback;
   s_window = window_create();
   window_set_window_handlers(s_window, (WindowHandlers){
                                            .load = station_window_load,
