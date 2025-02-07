@@ -48,6 +48,17 @@ static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_in
 
 // ------ END MENU LAYER CALLBACKS ------
 
+static void station_load_complete()
+{
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Received all %d stations", STATION_COUNT);
+
+  menu_layer_reload_data(s_menu_layer);
+  layer_set_hidden(menu_layer_get_layer(s_menu_layer), false);
+  layer_mark_dirty(menu_layer_get_layer(s_menu_layer));
+
+  spinner_layer_deinit(s_spinner_layer);
+}
+
 static void closest_station_callback(DictionaryIterator *iter)
 {
   layer_set_hidden(menu_layer_get_layer(s_menu_layer), true);
@@ -94,11 +105,7 @@ static void closest_station_callback(DictionaryIterator *iter)
 
   if (s_station_count == STATION_COUNT)
   {
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Received all %d stations", STATION_COUNT);
-    menu_layer_reload_data(s_menu_layer);
-    layer_set_hidden(menu_layer_get_layer(s_menu_layer), false);
-    layer_mark_dirty(menu_layer_get_layer(s_menu_layer));
-    spinner_layer_deinit(s_spinner_layer);
+    station_load_complete();
   }
 }
 
@@ -129,6 +136,7 @@ void station_window_load(Window *window)
                                                });
 
   menu_layer_set_click_config_onto_window(s_menu_layer, window);
+  layer_set_hidden(menu_layer_get_layer(s_menu_layer), true);
 
   s_spinner_layer = spinner_layer_init(bounds);
 

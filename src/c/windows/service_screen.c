@@ -105,6 +105,20 @@ static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_in
 
 // ------ END MENU LAYER CALLBACKS ------
 
+static void service_load_complete()
+{
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Received all %d calling points", s_available_calling_points);
+
+  s_origin = s_calling_points[0].crs;
+  s_destination = s_calling_points[s_available_calling_points - 1].crs;
+
+  menu_layer_reload_data(s_menu_layer);
+  layer_set_hidden(menu_layer_get_layer(s_menu_layer), false);
+  layer_mark_dirty(menu_layer_get_layer(s_menu_layer));
+
+  spinner_layer_deinit(s_spinner_layer);
+}
+
 static void service_callback(DictionaryIterator *iter)
 {
   layer_set_hidden(menu_layer_get_layer(s_menu_layer), true);
@@ -170,15 +184,7 @@ static void service_callback(DictionaryIterator *iter)
 
   if (s_calling_point_count == s_available_calling_points)
   {
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Received all %d calling points", s_available_calling_points);
-
-    s_origin = s_calling_points[0].crs;
-    s_destination = s_calling_points[s_available_calling_points - 1].crs;
-
-    menu_layer_reload_data(s_menu_layer);
-    layer_set_hidden(menu_layer_get_layer(s_menu_layer), false);
-    layer_mark_dirty(menu_layer_get_layer(s_menu_layer));
-    spinner_layer_deinit(s_spinner_layer);
+    service_load_complete();
   }
 }
 
@@ -217,7 +223,8 @@ void service_window_load(Window *window)
                                                });
 
   menu_layer_set_click_config_onto_window(s_menu_layer, window);
-
+  layer_set_hidden(menu_layer_get_layer(s_menu_layer), true);
+  
   s_spinner_layer = spinner_layer_init(bounds);
 
   layer_add_child(window_layer, menu_layer_get_layer(s_menu_layer));
