@@ -1,19 +1,16 @@
 {
     "configurations": [
         {
-            "name": "Mac",
+            "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "~/Library/Application Support/Pebble SDK/SDKs/4.3/sdk-core/pebble/basalt/include"
+                "~/.pebble-sdk/SDKs/4.3/sdk-core/pebble/basalt/include"
             ],
             "defines": [],
-            "macFrameworkPath": [
-                "/Applications/Xcode-beta.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks"
-            ],
             "compilerPath": "/usr/bin/clang",
             "cStandard": "c17",
             "cppStandard": "c++17",
-            "intelliSenseMode": "macos-clang-arm64"
+            "intelliSenseMode": "linux-gcc-x64"
         }
     ],
     "version": 4

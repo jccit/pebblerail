@@ -46,7 +46,7 @@ export function requestLocation() {
   if (isEmulator()) {
     console.log("Emulator detected, skipping location request");
     
-    lastLocation = getFakeLocation("liveerpool");
+    lastLocation = getFakeLocation("liverpool");
     
     return;
   }

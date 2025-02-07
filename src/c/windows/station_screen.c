@@ -2,6 +2,7 @@
 #include "departures_screen.h"
 #include "../data.h"
 #include "../layers/spinner_layer.h"
+#include "../layers/status_bar.h"
 
 static Window *s_window;
 static StatusBarLayer *s_status_bar;
@@ -106,7 +107,7 @@ void load_stations()
 
 void station_window_load(Window *window)
 {
-  s_status_bar = status_bar_layer_create();
+  s_status_bar = custom_status_bar_layer_create();
 
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
@@ -157,6 +158,7 @@ void station_screen_init()
 
 void station_screen_deinit()
 {
+  custom_status_bar_layer_destroy(s_status_bar);
   menu_layer_destroy(s_menu_layer);
   window_destroy(s_window);
 }

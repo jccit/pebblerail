@@ -10,6 +10,7 @@
     "stdbool.h": "c",
     "string.h": "c",
     "time.h": "c",
-    "_time.h": "c"
+    "_time.h": "c",
+    "status_bar.h": "c"
   }
 }
