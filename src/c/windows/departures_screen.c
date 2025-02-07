@@ -3,6 +3,7 @@
 #include "../data.h"
 #include "../layers/spinner_layer.h"
 #include "../layers/status_bar.h"
+#include "../layers/menu_header.h"
 
 static Window *s_window;
 static StatusBarLayer *s_status_bar;
@@ -74,7 +75,7 @@ static void menu_draw_row_callback(GContext *ctx, const Layer *cell_layer, MenuI
 
 static void menu_draw_header_callback(GContext *ctx, const Layer *cell_layer, uint16_t section_index, void *data)
 {
-  menu_cell_basic_header_draw(ctx, cell_layer, s_stationName);
+  menu_section_header_draw(ctx, cell_layer, s_stationName);
 }
 
 static int16_t menu_get_header_height_callback(MenuLayer *menu_layer, uint16_t section_index, void *data)
