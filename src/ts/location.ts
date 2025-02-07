@@ -2,6 +2,25 @@ let lastLocation: GeolocationPosition | null = null;
 let locationCallback: (position: GeolocationPosition) => void;
 let requestingLocation = false;
 
+const fakeLocation: Record<string, { latitude: number, longitude: number }> = {
+  liverpool: {
+    latitude: 53.4066873,
+    longitude: -2.9818569,
+  },
+  londonNorth: {
+    latitude: 51.5293076,
+    longitude: -0.1322747
+  }
+}
+
+function getFakeLocation(location: keyof typeof fakeLocation): GeolocationPosition {
+    const coords = fakeLocation[location] as GeolocationCoordinates;
+
+    return {
+      coords
+  } as GeolocationPosition
+}
+
 function isEmulator() {
   return !navigator.userAgent;
 }
@@ -26,13 +45,8 @@ function locationError(error: GeolocationPositionError) {
 export function requestLocation() {
   if (isEmulator()) {
     console.log("Emulator detected, skipping location request");
-    lastLocation = {
-      coords: {
-        latitude: 53.4066873,
-        longitude: -2.9818569,
-      } as GeolocationCoordinates,
-      timestamp: Date.now(),
-    } as GeolocationPosition;
+    
+    lastLocation = getFakeLocation("liveerpool");
     
     return;
   }
