@@ -59,9 +59,9 @@ static void menu_draw_row_callback(GContext *ctx, const Layer *cell_layer, MenuI
   int index = cell_index->row;
   char *platform_display = s_departures[index].platform;
 
-  if (strcmp(platform_display, "-1") == 0)
+  if (strcmp(platform_display, "un") == 0)
   {
-    platform_display = "unknown";
+    platform_display = "?";
   }
 
   snprintf(combined_text, sizeof(combined_text), "%s - Platform %s",

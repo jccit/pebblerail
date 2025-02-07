@@ -64,7 +64,7 @@ export function sendServiceInfo(service: TrainServiceDetails) {
   const callingPoints = service.locations;
 
   const serialised = callingPoints.map((location) => {
-    const time = calculateTime(location.departure);
+    const time = calculateTime(location.arrival.scheduled ? location.arrival : location.departure);
     let timeString = time?.scheduled || "00:00";
 
     if (time?.isLate) {
