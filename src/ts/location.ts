@@ -1,9 +1,15 @@
 let lastLocation: GeolocationPosition | null = null;
 let locationCallback: (position: GeolocationPosition) => void;
+let requestingLocation = false;
+
+function isEmulator() {
+  return !navigator.userAgent;
+}
 
 function locationSuccess(position: GeolocationPosition) {
   console.log("location", position);
   lastLocation = position;
+  requestingLocation = false;
   if (locationCallback) {
     locationCallback(position);
   }
@@ -11,13 +17,29 @@ function locationSuccess(position: GeolocationPosition) {
 
 function locationError(error: GeolocationPositionError) {
   console.log("location error", error);
+  requestingLocation = false;
 }
 
 /**
  * Triggers the pebblekit location api
  */
 export function requestLocation() {
+  if (isEmulator()) {
+    console.log("Emulator detected, skipping location request");
+    lastLocation = {
+      coords: {
+        latitude: 53.4066873,
+        longitude: -2.9818569,
+      } as GeolocationCoordinates,
+      timestamp: Date.now(),
+    } as GeolocationPosition;
+    
+    return;
+  }
+
   console.log("Requesting location");
+  requestingLocation = true;
+  console.log("userAgent", navigator.userAgent);
   navigator.geolocation.getCurrentPosition(locationSuccess, locationError);
 }
 
@@ -25,10 +47,14 @@ export function requestLocation() {
  * Returns the current location. Make sure to call requestLocation() first.
  * If we have it already, the callback is triggered immediately.
  */
-export function getLocation(callback: (position: GeolocationPosition) => void) {
+export function getLocation(callback: (position: GeolocationPosition) => void) {  
   if (lastLocation) {
     callback(lastLocation);
   } else {
     locationCallback = callback;
+
+    if (!requestingLocation) {
+      requestLocation();
+    }
   }
 }

@@ -38,6 +38,8 @@ export function fetchBinary(
     }
   };
 
+  console.log(`Fetching binary from ${url}`);
+
   req.onerror = () => callback(null);
   req.open("GET", url, true);
   req.send();

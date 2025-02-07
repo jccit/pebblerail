@@ -104,7 +104,7 @@ function getStationList() {
 
     readStationFile(response);
 
-    console.log("presisting station file");
+    console.log("persisting station file");
     localStorage.setItem("stationFile", exportStationFileJSON());
 
     console.log(`decoded ${countStations()} stations`);
