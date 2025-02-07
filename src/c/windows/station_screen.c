@@ -1,8 +1,9 @@
 #include "station_screen.h"
-#include "data.h"
-
+#include "../data.h"
+#include "../layers/spinner_layer.h"
 static Window *s_window;
 static StatusBarLayer *s_status_bar;
+static Layer *s_spinner_layer;
 static MenuLayer *s_menu_layer;
 
 #define STATION_COUNT 5
@@ -42,6 +43,8 @@ static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_in
 
 static void closest_station_callback(DictionaryIterator *iter)
 {
+  layer_set_hidden(menu_layer_get_layer(s_menu_layer), true);
+
   Tuple *location_tuple = dict_find(iter, MESSAGE_KEY_locationName);
   if (!location_tuple)
   {
@@ -86,7 +89,9 @@ static void closest_station_callback(DictionaryIterator *iter)
   {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Received all %d stations", STATION_COUNT);
     menu_layer_reload_data(s_menu_layer);
+    layer_set_hidden(menu_layer_get_layer(s_menu_layer), false);
     layer_mark_dirty(menu_layer_get_layer(s_menu_layer));
+    spinner_layer_deinit(s_spinner_layer);
   }
 }
 
@@ -104,7 +109,8 @@ void station_window_load(Window *window)
 
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
-  s_menu_layer = menu_layer_create(GRect(0, STATUS_BAR_LAYER_HEIGHT, bounds.size.w, bounds.size.h - STATUS_BAR_LAYER_HEIGHT));
+  GRect bounds_without_status_bar = GRect(0, STATUS_BAR_LAYER_HEIGHT, bounds.size.w, bounds.size.h - STATUS_BAR_LAYER_HEIGHT);
+  s_menu_layer = menu_layer_create(bounds_without_status_bar);
 
   menu_layer_set_callbacks(s_menu_layer, NULL, (MenuLayerCallbacks){
                                                    .get_num_sections = menu_get_num_sections_callback,
@@ -116,8 +122,12 @@ void station_window_load(Window *window)
 
   menu_layer_set_click_config_onto_window(s_menu_layer, window);
 
+  s_spinner_layer = spinner_layer_init(bounds_without_status_bar);
+
   layer_add_child(window_layer, menu_layer_get_layer(s_menu_layer));
+  layer_add_child(window_layer, s_spinner_layer);
   layer_add_child(window_layer, status_bar_layer_get_layer(s_status_bar));
+
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Station screen initialized");
 }
 

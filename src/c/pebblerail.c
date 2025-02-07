@@ -1,6 +1,6 @@
 #include <pebble.h>
-#include "station_screen.h"
-#include "departures_screen.h"
+#include "windows/station_screen.h"
+#include "windows/departures_screen.h"
 #include "data.h"
 
 void show_departures(char *crs)

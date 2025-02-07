@@ -3,6 +3,13 @@
     "pebble.h": "c",
     "pebble_fonts.h": "c",
     "message_keys.auto.h": "c",
-    "departures_screen.h": "c"
+    "departures_screen.h": "c",
+    "station_screen.h": "c",
+    "spinner_layer.h": "c",
+    "service_screen.h": "c",
+    "stdbool.h": "c",
+    "string.h": "c",
+    "time.h": "c",
+    "_time.h": "c"
   }
 }
