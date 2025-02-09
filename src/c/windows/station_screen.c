@@ -5,10 +5,19 @@
 #include "../layers/status_bar.h"
 #include "../layers/menu_header.h"
 
+#define ICON_TEST_ENABLED 1
+
 static Window *s_window;
 static StatusBarLayer *s_status_bar;
 static Layer *s_spinner_layer;
 static MenuLayer *s_menu_layer;
+
+#if ICON_TEST_ENABLED
+static Layer *s_icon_layer;
+static GDrawCommandImage *s_large_icon;
+static GDrawCommandImage *s_small_icon;
+static GDrawCommandImage *s_tiny_icon;
+#endif
 
 #define STATION_COUNT 5
 static struct Station s_stations[STATION_COUNT];
@@ -118,6 +127,25 @@ void load_stations()
   request_closest_stations();
 }
 
+#if ICON_TEST_ENABLED
+static void icon_layer_update_proc(Layer *layer, GContext *ctx)
+{
+  gdraw_command_image_draw(ctx, s_tiny_icon, GPoint(30, 20));
+  gdraw_command_image_draw(ctx, s_small_icon, GPoint(30, 40));
+  gdraw_command_image_draw(ctx, s_large_icon, GPoint(30, 80));
+}
+
+void test_icons()
+{
+  s_tiny_icon = gdraw_command_image_create_with_resource(RESOURCE_ID_TRAIN_TINY);
+  s_small_icon = gdraw_command_image_create_with_resource(RESOURCE_ID_TRAIN_SMALL);
+  s_large_icon = gdraw_command_image_create_with_resource(RESOURCE_ID_TRAIN_LARGE);
+
+  s_icon_layer = layer_create(GRect(0, 0, PBL_DISPLAY_WIDTH, PBL_DISPLAY_HEIGHT));
+  layer_set_update_proc(s_icon_layer, icon_layer_update_proc);
+  layer_add_child(window_get_root_layer(s_window), s_icon_layer);
+}
+#endif
 void station_window_load(Window *window)
 {
   s_status_bar = custom_status_bar_layer_create();
@@ -146,6 +174,10 @@ void station_window_load(Window *window)
   layer_add_child(window_layer, status_bar_layer_get_layer(s_status_bar));
 
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Station screen initialized");
+
+#if ICON_TEST_ENABLED
+  test_icons();
+#endif
 }
 
 void station_window_unload(Window *window)
