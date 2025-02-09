@@ -3,3 +3,4 @@ build/
 node_modules/
 src/ts/gen/
 src/pkjs/
+.DS_Store
