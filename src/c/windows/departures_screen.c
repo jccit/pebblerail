@@ -1,6 +1,7 @@
 #include "departures_screen.h"
 #include "service_screen.h"
 #include "../data.h"
+#include "../utils.h"
 #include "../layers/spinner_layer.h"
 #include "../layers/status_bar.h"
 #include "../layers/menu_header.h"
@@ -9,8 +10,10 @@ static Window *s_window;
 static StatusBarLayer *s_status_bar;
 static MenuLayer *s_menu_layer;
 static Layer *s_spinner_layer;
+static TextLayer *s_error_layer;
 static char *s_crs;
 static char *s_stationName;
+
 #define ACTION_MENU_NUM_ITEMS 2
 static ActionMenu *s_action_menu;
 static ActionMenuLevel *s_root_level;
@@ -111,6 +114,15 @@ static void departures_load_complete()
   spinner_layer_deinit(s_spinner_layer);
 }
 
+static void no_departures()
+{
+  departures_load_complete();
+  layer_set_hidden(menu_layer_get_layer(s_menu_layer), true);
+
+  s_error_layer = create_error_layer(s_window, "No departures found");
+  layer_add_child(window_get_root_layer(s_window), text_layer_get_layer(s_error_layer));
+}
+
 static void departures_callback(DictionaryIterator *iter)
 {
   layer_set_hidden(menu_layer_get_layer(s_menu_layer), true);
@@ -125,6 +137,13 @@ static void departures_callback(DictionaryIterator *iter)
   uint8_t count = count_tuple->value->uint8;
   s_available_departures = count > MAX_DEPARTURE_COUNT ? MAX_DEPARTURE_COUNT : count;
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Set available departures to %d", s_available_departures);
+
+  if (s_available_departures == 0)
+  {
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "No departures received");
+    no_departures();
+    return;
+  }
 
   Tuple *serviceID_tuple = dict_find(iter, MESSAGE_KEY_serviceID);
   if (!serviceID_tuple)
@@ -195,8 +214,8 @@ void departures_window_load(Window *window)
 
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
-  GRect bounds_without_status_bar = GRect(0, STATUS_BAR_LAYER_HEIGHT, bounds.size.w, bounds.size.h - STATUS_BAR_LAYER_HEIGHT);
-  s_menu_layer = menu_layer_create(bounds_without_status_bar);
+  GRect bounds_status_bar = bounds_with_status_bar(window);
+  s_menu_layer = menu_layer_create(bounds_status_bar);
 
   menu_layer_set_callbacks(s_menu_layer, NULL, (MenuLayerCallbacks){
                                                    .get_num_sections = menu_get_num_sections_callback,

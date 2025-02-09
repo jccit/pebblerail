@@ -1,11 +1,12 @@
 #include "station_screen.h"
 #include "departures_screen.h"
 #include "../data.h"
+#include "../utils.h"
 #include "../layers/spinner_layer.h"
 #include "../layers/status_bar.h"
 #include "../layers/menu_header.h"
 
-#define ICON_TEST_ENABLED 1
+#define ICON_TEST_ENABLED 0
 
 static Window *s_window;
 static StatusBarLayer *s_status_bar;
@@ -152,8 +153,8 @@ void station_window_load(Window *window)
 
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
-  GRect bounds_without_status_bar = GRect(0, STATUS_BAR_LAYER_HEIGHT, bounds.size.w, bounds.size.h - STATUS_BAR_LAYER_HEIGHT);
-  s_menu_layer = menu_layer_create(bounds_without_status_bar);
+  GRect bounds_status_bar = bounds_with_status_bar(window);
+  s_menu_layer = menu_layer_create(bounds_status_bar);
 
   menu_layer_set_callbacks(s_menu_layer, NULL, (MenuLayerCallbacks){
                                                    .get_num_sections = menu_get_num_sections_callback,

@@ -1,6 +1,7 @@
 #include "service_screen.h"
 #include "departures_screen.h"
 #include "../data.h"
+#include "../utils.h"
 #include "../layers/spinner_layer.h"
 #include "../layers/status_bar.h"
 #include "../layers/menu_header.h"
@@ -10,6 +11,7 @@ static Window *s_window;
 static StatusBarLayer *s_status_bar;
 static MenuLayer *s_menu_layer;
 static Layer *s_spinner_layer;
+static TextLayer *s_error_layer;
 static char *s_service_id;
 static char *s_origin;
 static char *s_destination;
@@ -113,6 +115,15 @@ static void service_load_complete()
   spinner_layer_deinit(s_spinner_layer);
 }
 
+static void no_service()
+{
+  layer_set_hidden(menu_layer_get_layer(s_menu_layer), true);
+  spinner_layer_deinit(s_spinner_layer);
+
+  s_error_layer = create_error_layer(s_window, "Service not found");
+  layer_add_child(window_get_root_layer(s_window), text_layer_get_layer(s_error_layer));
+}
+
 static void service_callback(DictionaryIterator *iter)
 {
   layer_set_hidden(menu_layer_get_layer(s_menu_layer), true);
@@ -127,6 +138,12 @@ static void service_callback(DictionaryIterator *iter)
   uint8_t count = count_tuple->value->uint8;
   s_available_calling_points = count > MAX_CALLING_POINT_COUNT ? MAX_CALLING_POINT_COUNT : count;
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Set available calling points to %d", s_available_calling_points);
+
+  if (s_available_calling_points == 0)
+  {
+    no_service();
+    return;
+  }
 
   Tuple *locationName_tuple = dict_find(iter, MESSAGE_KEY_locationName);
   if (!locationName_tuple)
@@ -204,8 +221,8 @@ void service_window_load(Window *window)
 
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
-  GRect bounds_without_status_bar = GRect(0, STATUS_BAR_LAYER_HEIGHT, bounds.size.w, bounds.size.h - STATUS_BAR_LAYER_HEIGHT);
-  s_menu_layer = menu_layer_create(bounds_without_status_bar);
+  GRect bounds_status_bar = bounds_with_status_bar(window);
+  s_menu_layer = menu_layer_create(bounds_status_bar);
 
   menu_layer_set_callbacks(s_menu_layer, NULL, (MenuLayerCallbacks){
                                                    .get_num_sections = menu_get_num_sections_callback,
