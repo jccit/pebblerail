@@ -6,12 +6,14 @@
 #include "../layers/status_bar.h"
 #include "../layers/menu_header.h"
 #include "../layers/journey_item.h"
+#include "../layers/service_summary.h"
 
 static Window *s_window;
 static StatusBarLayer *s_status_bar;
 static MenuLayer *s_menu_layer;
 static Layer *s_spinner_layer;
 static TextLayer *s_error_layer;
+static ServiceSummaryLayer *s_service_summary_layer;
 static char *s_service_id;
 static char *s_origin;
 static char *s_destination;
@@ -101,6 +103,39 @@ static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_in
 
 // ------ END MENU LAYER CALLBACKS ------
 
+// Displays the menu and binds the click handler
+static void activate_menu()
+{
+  custom_status_bar_set_color(s_status_bar, GColorWhite);
+
+  layer_set_hidden(menu_layer_get_layer(s_menu_layer), false);
+  layer_mark_dirty(menu_layer_get_layer(s_menu_layer));
+  menu_layer_set_click_config_onto_window(s_menu_layer, s_window);
+}
+
+// Hides the menu and unbinds the click handler
+static void deactivate_menu()
+{
+  layer_set_hidden(menu_layer_get_layer(s_menu_layer), true);
+}
+
+static void create_service_summary()
+{
+  GRect bounds = bounds_with_status_bar_no_padding(s_window);
+  s_service_summary_layer = service_summary_init(bounds);
+  layer_add_child(window_get_root_layer(s_window), s_service_summary_layer);
+  layer_set_hidden(s_service_summary_layer, true);
+}
+
+static void show_service_summary()
+{
+  custom_status_bar_set_color(s_status_bar, GColorBlue);
+  service_summary_set_destination(s_service_summary_layer, s_destination);
+
+  layer_set_hidden(s_service_summary_layer, false);
+  layer_mark_dirty(s_service_summary_layer);
+}
+
 static void service_load_complete()
 {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Received all %d calling points", s_available_calling_points);
@@ -109,8 +144,9 @@ static void service_load_complete()
   s_destination = s_calling_points[s_available_calling_points - 1].crs;
 
   menu_layer_reload_data(s_menu_layer);
-  layer_set_hidden(menu_layer_get_layer(s_menu_layer), false);
-  layer_mark_dirty(menu_layer_get_layer(s_menu_layer));
+
+  // activate_menu();
+  show_service_summary();
 
   spinner_layer_deinit(s_spinner_layer);
 }
@@ -233,13 +269,13 @@ void service_window_load(Window *window)
                                                    .select_click = menu_select_click_callback,
                                                });
 
-  menu_layer_set_click_config_onto_window(s_menu_layer, window);
   layer_set_hidden(menu_layer_get_layer(s_menu_layer), true);
 
   s_spinner_layer = spinner_layer_init(bounds);
 
   layer_add_child(window_layer, menu_layer_get_layer(s_menu_layer));
   layer_add_child(window_layer, s_spinner_layer);
+  create_service_summary();
   layer_add_child(window_layer, status_bar_layer_get_layer(s_status_bar));
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Station screen initialized");
 }

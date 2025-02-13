@@ -1,10 +1,20 @@
 #include "utils.h"
 
-GRect bounds_with_status_bar(Window *window)
+GRect _status_bar_bounds(Window *window, int status_bar_height)
 {
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
-  return GRect(0, STATUS_BAR_LAYER_HEIGHT, bounds.size.w, bounds.size.h - STATUS_BAR_LAYER_HEIGHT);
+  return GRect(0, status_bar_height, bounds.size.w, bounds.size.h - status_bar_height);
+}
+
+GRect bounds_with_status_bar(Window *window)
+{
+  return _status_bar_bounds(window, STATUS_BAR_LAYER_HEIGHT);
+}
+
+GRect bounds_with_status_bar_no_padding(Window *window)
+{
+  return _status_bar_bounds(window, STATUS_BAR_LAYER_HEIGHT / 2);
 }
 
 TextLayer *create_error_layer(Window *window, char *message)
