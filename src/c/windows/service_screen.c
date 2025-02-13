@@ -15,6 +15,7 @@ static Layer *s_spinner_layer;
 static TextLayer *s_error_layer;
 static ServiceSummaryLayer *s_service_summary_layer;
 static char *s_service_id;
+static char *s_operator;
 static char *s_origin;
 static char *s_destination;
 
@@ -129,8 +130,8 @@ static void create_service_summary()
 
 static void show_service_summary()
 {
-  custom_status_bar_set_color(s_status_bar, GColorBlue);
-  service_summary_set_destination(s_service_summary_layer, s_destination);
+  service_summary_set_data(s_service_summary_layer, s_destination, s_operator);
+  custom_status_bar_set_color(s_status_bar, service_summary_get_color(s_service_summary_layer));
 
   layer_set_hidden(s_service_summary_layer, false);
   layer_mark_dirty(s_service_summary_layer);
@@ -285,9 +286,10 @@ void service_window_unload(Window *window)
   service_screen_deinit();
 }
 
-void service_screen_init(char *service_id)
+void service_screen_init(char *service_id, char *operator_code)
 {
   s_service_id = service_id;
+  s_operator = operator_code;
   s_window = window_create();
   window_set_window_handlers(s_window, (WindowHandlers){
                                            .load = service_window_load,

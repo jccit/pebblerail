@@ -32,8 +32,8 @@ typedef struct DepartureEntry
   char destination[30];
   char departureTime[6];
   char platform[3];
+  char operatorCode[3];
 } DepartureEntry;
-
 
 void data_init();
 

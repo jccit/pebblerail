@@ -35,7 +35,8 @@
       "distance",
       "crs",
       "time",
-      "platform"
+      "platform",
+      "operatorCode"
     ],
     "resources": {
       "media": [

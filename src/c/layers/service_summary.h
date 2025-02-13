@@ -6,4 +6,5 @@ typedef Layer ServiceSummaryLayer;
 
 ServiceSummaryLayer *service_summary_init(GRect bounds);
 void service_summary_deinit(ServiceSummaryLayer *layer);
-void service_summary_set_destination(ServiceSummaryLayer *layer, char *destination);
+void service_summary_set_data(ServiceSummaryLayer *layer, char *destination, char *operator_code);
+GColor service_summary_get_color(ServiceSummaryLayer *layer);

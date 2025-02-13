@@ -30,6 +30,19 @@ typedef enum
   MENU_ACTION_PIN = 2
 } DepartureMenuAction;
 
+#define EXTRACT_TUPLE(iter, key, var)                          \
+  Tuple *var##_tuple = dict_find(iter, MESSAGE_KEY_##key);     \
+  if (!var##_tuple)                                            \
+  {                                                            \
+    APP_LOG(APP_LOG_LEVEL_ERROR, "No " #key " data received"); \
+    return;                                                    \
+  }                                                            \
+  char *var = var##_tuple->value->cstring;
+
+#define COPY_STRING(dest, src)          \
+  strncpy(dest, src, sizeof(dest) - 1); \
+  dest[sizeof(dest) - 1] = '\0';
+
 static void action_performed_callback(ActionMenu *action_menu, const ActionMenuItem *action, void *context)
 {
   DepartureMenuAction selected_action = (DepartureMenuAction)action_menu_item_get_action_data(action);
@@ -37,7 +50,7 @@ static void action_performed_callback(ActionMenu *action_menu, const ActionMenuI
 
   if (selected_action == MENU_ACTION_VIEW_STOPS)
   {
-    service_screen_init(s_departures[s_selected_departure_index].serviceID);
+    service_screen_init(s_departures[s_selected_departure_index].serviceID, s_departures[s_selected_departure_index].operatorCode);
   }
   else if (selected_action == MENU_ACTION_PIN)
   {
@@ -133,9 +146,10 @@ static void departures_callback(DictionaryIterator *iter)
     APP_LOG(APP_LOG_LEVEL_ERROR, "No departure data received");
     return;
   }
-
   uint8_t count = count_tuple->value->uint8;
+
   s_available_departures = count > MAX_DEPARTURE_COUNT ? MAX_DEPARTURE_COUNT : count;
+
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Set available departures to %d", s_available_departures);
 
   if (s_available_departures == 0)
@@ -145,50 +159,17 @@ static void departures_callback(DictionaryIterator *iter)
     return;
   }
 
-  Tuple *serviceID_tuple = dict_find(iter, MESSAGE_KEY_serviceID);
-  if (!serviceID_tuple)
-  {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "No serviceID data received");
-    return;
-  }
+  EXTRACT_TUPLE(iter, serviceID, serviceID);
+  EXTRACT_TUPLE(iter, locationName, locationName);
+  EXTRACT_TUPLE(iter, time, time);
+  EXTRACT_TUPLE(iter, platform, platform);
+  EXTRACT_TUPLE(iter, operatorCode, operatorCode);
 
-  char *serviceID = serviceID_tuple->value->cstring;
-
-  Tuple *locationName_tuple = dict_find(iter, MESSAGE_KEY_locationName);
-  if (!locationName_tuple)
-  {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "No locationName data received");
-    return;
-  }
-  char *locationName = locationName_tuple->value->cstring;
-
-  Tuple *time_tuple = dict_find(iter, MESSAGE_KEY_time);
-  if (!time_tuple)
-  {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "No time data received");
-    return;
-  }
-  char *time = time_tuple->value->cstring;
-
-  Tuple *platform_tuple = dict_find(iter, MESSAGE_KEY_platform);
-  if (!platform_tuple)
-  {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "No platform data received");
-    return;
-  }
-  char *platform = platform_tuple->value->cstring;
-
-  strncpy(s_departures[s_departure_count].destination, locationName, sizeof(s_departures[s_departure_count].destination) - 1);
-  s_departures[s_departure_count].destination[sizeof(s_departures[s_departure_count].destination) - 1] = '\0';
-
-  strncpy(s_departures[s_departure_count].departureTime, time, sizeof(s_departures[s_departure_count].departureTime) - 1);
-  s_departures[s_departure_count].departureTime[sizeof(s_departures[s_departure_count].departureTime) - 1] = '\0';
-
-  strncpy(s_departures[s_departure_count].platform, platform, sizeof(s_departures[s_departure_count].platform) - 1);
-  s_departures[s_departure_count].platform[sizeof(s_departures[s_departure_count].platform) - 1] = '\0';
-
-  strncpy(s_departures[s_departure_count].serviceID, serviceID, sizeof(s_departures[s_departure_count].serviceID) - 1);
-  s_departures[s_departure_count].serviceID[sizeof(s_departures[s_departure_count].serviceID) - 1] = '\0';
+  COPY_STRING(s_departures[s_departure_count].destination, locationName);
+  COPY_STRING(s_departures[s_departure_count].departureTime, time);
+  COPY_STRING(s_departures[s_departure_count].platform, platform);
+  COPY_STRING(s_departures[s_departure_count].serviceID, serviceID);
+  COPY_STRING(s_departures[s_departure_count].operatorCode, operatorCode);
 
   s_departure_count++;
 

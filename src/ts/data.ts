@@ -52,6 +52,7 @@ export function sendDepartureList(departures: TrainService[]) {
       locationName: departure.destination.locationName,
       time: timeString,
       platform: departure.platform || "-1",
+      operatorCode: departure.operatorCode,
     };
   });
 
