@@ -110,14 +110,46 @@ static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_in
 
 // ------ END MENU LAYER CALLBACKS ------
 
+static void menu_up_handler(ClickRecognizerRef recognizer, void *context)
+{
+  // TODO: Swap back to the service summary
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Going up");
+  menu_layer_set_selected_next(s_menu_layer, true, MenuRowAlignNone, true);
+  scroll_layer_scroll_up_click_handler(menu_layer_get_scroll_layer(s_menu_layer), NULL);
+}
+
+static void menu_down_handler(ClickRecognizerRef recognizer, void *context)
+{
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Going down");
+  menu_layer_set_selected_next(s_menu_layer, false, MenuRowAlignNone, true);
+  scroll_layer_scroll_down_click_handler(menu_layer_get_scroll_layer(s_menu_layer), NULL);
+}
+
+static void menu_click_config_provider(void *context)
+{
+  window_single_click_subscribe(BUTTON_ID_UP, menu_up_handler);
+  window_single_click_subscribe(BUTTON_ID_DOWN, menu_down_handler);
+}
+
 // Displays the menu and binds the click handler
 static void activate_menu()
 {
   custom_status_bar_set_color(s_status_bar, GColorWhite);
 
+  layer_set_hidden(s_service_summary_layer, true);
   layer_set_hidden(menu_layer_get_layer(s_menu_layer), false);
   layer_mark_dirty(menu_layer_get_layer(s_menu_layer));
+
+  scroll_layer_set_callbacks(menu_layer_get_scroll_layer(s_menu_layer), (ScrollLayerCallbacks){
+                                                                            .click_config_provider = menu_click_config_provider,
+                                                                        });
   menu_layer_set_click_config_onto_window(s_menu_layer, s_window);
+}
+
+static void window_down_handler(ClickRecognizerRef recognizer, void *context)
+{
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Switching to calling point list");
+  activate_menu();
 }
 
 // Hides the menu and unbinds the click handler
@@ -134,13 +166,21 @@ static void create_service_summary()
   layer_set_hidden(s_service_summary_layer, true);
 }
 
+static void summary_click_config_provider(void *context)
+{
+  window_single_click_subscribe(BUTTON_ID_DOWN, window_down_handler);
+}
+
 static void show_service_summary()
 {
   service_summary_set_data(s_service_summary_layer, s_calling_points[s_available_calling_points - 1].destination, s_operator, s_calling_points[s_available_calling_points - 1].departureTime);
   custom_status_bar_set_color(s_status_bar, service_summary_get_color(s_service_summary_layer));
 
   layer_set_hidden(s_service_summary_layer, false);
+  layer_set_hidden(menu_layer_get_layer(s_menu_layer), true);
   layer_mark_dirty(s_service_summary_layer);
+
+  window_set_click_config_provider(s_window, summary_click_config_provider);
 }
 
 static void service_load_complete()
@@ -152,7 +192,6 @@ static void service_load_complete()
 
   menu_layer_reload_data(s_menu_layer);
 
-  // activate_menu();
   show_service_summary();
 
   spinner_layer_deinit(s_spinner_layer);
