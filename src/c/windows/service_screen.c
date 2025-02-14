@@ -88,6 +88,12 @@ static int16_t menu_get_header_height_callback(MenuLayer *menu_layer, uint16_t s
 
 static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data)
 {
+  // If the menu is hidden, don't allow clicks
+  if (layer_get_hidden(menu_layer_get_layer(s_menu_layer)))
+  {
+    return;
+  }
+
   // Configure the ActionMenu Window about to be shown
   ActionMenuConfig config = (ActionMenuConfig){
       .root_level = s_root_level,
