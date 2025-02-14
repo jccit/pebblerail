@@ -130,7 +130,7 @@ static void create_service_summary()
 
 static void show_service_summary()
 {
-  service_summary_set_data(s_service_summary_layer, s_destination, s_operator);
+  service_summary_set_data(s_service_summary_layer, s_calling_points[s_available_calling_points - 1].destination, s_operator, s_calling_points[s_available_calling_points - 1].departureTime);
   custom_status_bar_set_color(s_status_bar, service_summary_get_color(s_service_summary_layer));
 
   layer_set_hidden(s_service_summary_layer, false);
