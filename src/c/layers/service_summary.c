@@ -26,26 +26,37 @@ static void service_summary_update_proc(Layer *layer, GContext *ctx)
   graphics_context_set_text_color(ctx, fg_color);
   graphics_context_set_stroke_color(ctx, GColorRed);
 
+#ifdef PBL_ROUND
+  int16_t icon_margin = 25;
+  int16_t icon_offset = icon_margin + 50 + 5;
+  GTextAlignment time_alignment = GTextAlignmentLeft;
+  GTextAlignment status_alignment = GTextAlignmentCenter;
+#else
+  int16_t icon_margin = 5;
+  int16_t icon_offset = icon_margin + 50 + 5;
+  GTextAlignment time_alignment = GTextAlignmentCenter;
+  GTextAlignment status_alignment = GTextAlignmentLeft;
+#endif
+
   // Background
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
   // Train icon
-  gdraw_command_image_draw(ctx, s_train_icon, GPoint(5, 15));
+  gdraw_command_image_draw(ctx, s_train_icon, GPoint(icon_margin, 15));
 
   // Time
-  int16_t icon_offset = 5 + 50 + 5;
   int16_t text_height = 30;
   GRect time_bounds = GRect(icon_offset, 15 + (50 - text_height) / 2, (bounds.size.w) - (icon_offset + 5), text_height);
   // graphics_draw_rect(ctx, time_bounds);
-  graphics_draw_text(ctx, service_summary_data->time, number_font, time_bounds, GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
+  graphics_draw_text(ctx, service_summary_data->time, number_font, time_bounds, GTextOverflowModeWordWrap, time_alignment, NULL);
 
   // Operator
   GRect operator_bounds = GRect(5, 15 + 50 + 5, (bounds.size.w) - 5, 20);
-  graphics_draw_text(ctx, service_summary_data->operator_info.name, operator_font, operator_bounds, GTextOverflowModeWordWrap, GTextAlignmentLeft, NULL);
+  graphics_draw_text(ctx, service_summary_data->operator_info.name, operator_font, operator_bounds, GTextOverflowModeWordWrap, status_alignment, NULL);
 
   // Destination
   GRect destination_bounds = GRect(5, 15 + 50 + 5 + 15, (bounds.size.w) - 5, 40);
-  graphics_draw_text(ctx, service_summary_data->destination, font, destination_bounds, GTextOverflowModeWordWrap, GTextAlignmentLeft, NULL);
+  graphics_draw_text(ctx, service_summary_data->destination, font, destination_bounds, GTextOverflowModeWordWrap, status_alignment, NULL);
 }
 
 ServiceSummaryLayer *service_summary_init(GRect bounds)
