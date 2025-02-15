@@ -110,26 +110,9 @@ static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_in
 
 // ------ END MENU LAYER CALLBACKS ------
 
-static void menu_up_handler(ClickRecognizerRef recognizer, void *context)
-{
-  // TODO: Swap back to the service summary
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Going up");
-  menu_layer_set_selected_next(s_menu_layer, true, MenuRowAlignNone, true);
-  scroll_layer_scroll_up_click_handler(menu_layer_get_scroll_layer(s_menu_layer), NULL);
-}
-
-static void menu_down_handler(ClickRecognizerRef recognizer, void *context)
-{
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Going down");
-  menu_layer_set_selected_next(s_menu_layer, false, MenuRowAlignNone, true);
-  scroll_layer_scroll_down_click_handler(menu_layer_get_scroll_layer(s_menu_layer), NULL);
-}
-
-static void menu_click_config_provider(void *context)
-{
-  window_single_click_subscribe(BUTTON_ID_UP, menu_up_handler);
-  window_single_click_subscribe(BUTTON_ID_DOWN, menu_down_handler);
-}
+// Forward declare click config providers
+static void menu_click_config_provider(void *context);
+static void summary_click_config_provider(void *context);
 
 // Displays the menu and binds the click handler
 static void activate_menu()
@@ -146,29 +129,10 @@ static void activate_menu()
   menu_layer_set_click_config_onto_window(s_menu_layer, s_window);
 }
 
-static void window_down_handler(ClickRecognizerRef recognizer, void *context)
-{
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Switching to calling point list");
-  activate_menu();
-}
-
 // Hides the menu and unbinds the click handler
 static void deactivate_menu()
 {
   layer_set_hidden(menu_layer_get_layer(s_menu_layer), true);
-}
-
-static void create_service_summary()
-{
-  GRect bounds = bounds_with_status_bar_no_padding(s_window);
-  s_service_summary_layer = service_summary_init(bounds);
-  layer_add_child(window_get_root_layer(s_window), s_service_summary_layer);
-  layer_set_hidden(s_service_summary_layer, true);
-}
-
-static void summary_click_config_provider(void *context)
-{
-  window_single_click_subscribe(BUTTON_ID_DOWN, window_down_handler);
 }
 
 static void show_service_summary()
@@ -181,6 +145,64 @@ static void show_service_summary()
   layer_mark_dirty(s_service_summary_layer);
 
   window_set_click_config_provider(s_window, summary_click_config_provider);
+}
+
+static void menu_scroll(ClickRecognizerRef recognizer, bool up)
+{
+  menu_layer_set_selected_next(s_menu_layer, up, MenuRowAlignNone, true);
+  ScrollLayer *scroll_layer = menu_layer_get_scroll_layer(s_menu_layer);
+  if (up)
+  {
+    scroll_layer_scroll_up_click_handler(recognizer, scroll_layer);
+  }
+  else
+  {
+    scroll_layer_scroll_down_click_handler(recognizer, scroll_layer);
+  }
+}
+
+static void menu_up_handler(ClickRecognizerRef recognizer, void *context)
+{
+  MenuIndex index = menu_layer_get_selected_index(s_menu_layer);
+  if (index.row == 0)
+  {
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Going back to service summary");
+    deactivate_menu();
+    show_service_summary();
+    return;
+  }
+
+  menu_scroll(recognizer, true);
+}
+
+static void menu_down_handler(ClickRecognizerRef recognizer, void *context)
+{
+  menu_scroll(recognizer, false);
+}
+
+static void menu_click_config_provider(void *context)
+{
+  window_single_click_subscribe(BUTTON_ID_UP, menu_up_handler);
+  window_single_click_subscribe(BUTTON_ID_DOWN, menu_down_handler);
+}
+
+static void create_service_summary()
+{
+  GRect bounds = bounds_with_status_bar_no_padding(s_window);
+  s_service_summary_layer = service_summary_init(bounds);
+  layer_add_child(window_get_root_layer(s_window), s_service_summary_layer);
+  layer_set_hidden(s_service_summary_layer, true);
+}
+
+static void window_down_handler(ClickRecognizerRef recognizer, void *context)
+{
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Switching to calling point list");
+  activate_menu();
+}
+
+static void summary_click_config_provider(void *context)
+{
+  window_single_click_subscribe(BUTTON_ID_DOWN, window_down_handler);
 }
 
 static void service_load_complete()
