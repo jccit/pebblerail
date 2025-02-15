@@ -241,10 +241,17 @@ static void menu_down_handler(ClickRecognizerRef recognizer, void *context)
   menu_layer_set_selected_next(s_menu_layer, false, MenuRowAlignCenter, true);
 }
 
+static void menu_select_handler(ClickRecognizerRef recognizer, void *context)
+{
+  MenuIndex index = menu_layer_get_selected_index(s_menu_layer);
+  menu_select_click_callback(s_menu_layer, &index, NULL);
+}
+
 static void menu_click_config_provider(void *context)
 {
   window_single_click_subscribe(BUTTON_ID_UP, menu_up_handler);
   window_single_click_subscribe(BUTTON_ID_DOWN, menu_down_handler);
+  window_single_click_subscribe(BUTTON_ID_SELECT, menu_select_handler);
 }
 
 static void create_service_summary()
