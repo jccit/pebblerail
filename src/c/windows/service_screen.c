@@ -107,7 +107,23 @@ static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_in
 
 // ------ END MENU LAYER CALLBACKS ------
 
-static CallingPointEntry *get_destination_calling_point()
+static uint16_t get_origin_calling_point_index()
+{
+  if (s_available_calling_points == s_calling_point_count)
+  {
+    for (int i = 0; i < s_available_calling_points; i++)
+    {
+      if (strcmp(s_calling_points[i].crs, s_service_info.origin) == 0)
+      {
+        return i;
+      }
+    }
+  }
+
+  return 0;
+}
+
+static uint16_t get_destination_calling_point_index()
 {
   if (s_available_calling_points == s_calling_point_count)
   {
@@ -115,12 +131,22 @@ static CallingPointEntry *get_destination_calling_point()
     {
       if (strcmp(s_calling_points[i].crs, s_service_info.destination) == 0)
       {
-        return &s_calling_points[i];
+        return i;
       }
     }
   }
 
-  return &s_calling_points[s_available_calling_points - 1];
+  return s_available_calling_points - 1;
+}
+
+static CallingPointEntry *get_origin_calling_point()
+{
+  return &s_calling_points[get_origin_calling_point_index()];
+}
+
+static CallingPointEntry *get_destination_calling_point()
+{
+  return &s_calling_points[get_destination_calling_point_index()];
 }
 
 // Forward declare click config providers
@@ -150,15 +176,41 @@ static void deactivate_menu()
 
 static void show_service_summary()
 {
-  CallingPointEntry *origin = &s_calling_points[0];
-  CallingPointEntry *destination = get_destination_calling_point();
+  CallingPointEntry *origin = get_origin_calling_point();
+  uint16_t destination_index = get_destination_calling_point_index();
+  CallingPointEntry *destination = &s_calling_points[destination_index];
+
+  bool part_cancelled = destination_index + 1 < s_available_calling_points;
+
+  char *reason = NULL;
+
+  if (strlen(s_service_info.cancelReason) > 1)
+  {
+    char *prefix = part_cancelled ? "Part cancelled due to " : "Cancelled due to ";
+    uint16_t total_length = strlen(prefix) + strlen(s_service_info.cancelReason) + 1;
+    reason = malloc(total_length);
+
+    strcpy(reason, prefix);
+    strcat(reason, s_service_info.cancelReason);
+  }
+  else if (strlen(s_service_info.delayReason) > 1)
+  {
+    char *prefix = "Delayed due to ";
+    uint16_t total_length = strlen(prefix) + strlen(s_service_info.delayReason) + 1;
+    reason = malloc(total_length);
+
+    strcpy(reason, prefix);
+    strcat(reason, s_service_info.delayReason);
+  }
 
   service_summary_set_data(
       s_service_summary_layer,
       origin->destination,
       destination->destination,
       s_service_info.operatorCode,
-      destination->departureTime);
+      origin->departureTime,
+      reason,
+      origin->platform);
 
   custom_status_bar_set_color(s_status_bar, service_summary_get_color(s_service_summary_layer));
 
@@ -238,14 +290,12 @@ static void no_service()
 
 static void service_info_callback(DictionaryIterator *iter)
 {
-  EXTRACT_TUPLE(iter, origin, origin);
   EXTRACT_TUPLE(iter, destination, destination);
   EXTRACT_TUPLE(iter, operatorCode, operatorCode);
   EXTRACT_TUPLE(iter, isCancelled, isCancelled);
   EXTRACT_TUPLE(iter, cancelReason, cancelReason);
   EXTRACT_TUPLE(iter, delayReason, delayReason);
 
-  COPY_STRING(s_service_info.origin, origin);
   COPY_STRING(s_service_info.destination, destination);
   COPY_STRING(s_service_info.operatorCode, operatorCode);
   COPY_STRING(s_service_info.cancelReason, cancelReason);
@@ -347,9 +397,11 @@ void service_window_unload(Window *window)
   service_screen_deinit();
 }
 
-void service_screen_init(char *service_id)
+void service_screen_init(char *service_id, char *origin)
 {
   COPY_STRING(s_service_info.serviceID, service_id);
+  COPY_STRING(s_service_info.origin, origin);
+
   s_window = window_create();
   window_set_window_handlers(s_window, (WindowHandlers){
                                            .load = service_window_load,

@@ -37,7 +37,7 @@ static void action_performed_callback(ActionMenu *action_menu, const ActionMenuI
 
   if (selected_action == MENU_ACTION_VIEW_STOPS)
   {
-    service_screen_init(s_departures[s_selected_departure_index].serviceID);
+    service_screen_init(s_departures[s_selected_departure_index].serviceID, s_crs);
   }
   else if (selected_action == MENU_ACTION_PIN)
   {
