@@ -115,6 +115,7 @@ static uint16_t get_origin_calling_point_index()
     {
       if (strcmp(s_calling_points[i].crs, s_service_info.origin) == 0)
       {
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "Origin calling point %s = %s index: %d", s_calling_points[i].crs, s_service_info.origin, i);
         return i;
       }
     }
@@ -269,7 +270,6 @@ static void service_load_complete()
 {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Received all %d calling points", s_available_calling_points);
 
-  COPY_STRING(s_service_info.origin, s_calling_points[0].crs);
   COPY_STRING(s_service_info.destination, get_destination_calling_point()->crs);
 
   menu_layer_reload_data(s_menu_layer);
@@ -401,6 +401,8 @@ void service_screen_init(char *service_id, char *origin)
 {
   COPY_STRING(s_service_info.serviceID, service_id);
   COPY_STRING(s_service_info.origin, origin);
+
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Service screen initialized with service ID: %s and origin: %s", s_service_info.serviceID, s_service_info.origin);
 
   s_window = window_create();
   window_set_window_handlers(s_window, (WindowHandlers){

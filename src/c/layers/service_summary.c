@@ -78,7 +78,7 @@ static void service_summary_update_proc(Layer *layer, GContext *ctx)
   if (show_platform)
   {
     GRect platform_bounds = GRect(icon_offset, time_vertical_pos - 1, time_width, 20);
-    graphics_draw_text(ctx, "Plat: 1?", s_operator_font, platform_bounds, GTextOverflowModeWordWrap, time_alignment, NULL);
+    graphics_draw_text(ctx, service_summary_data->platform, s_operator_font, platform_bounds, GTextOverflowModeWordWrap, time_alignment, NULL);
   }
 
   // Late
@@ -154,7 +154,6 @@ void service_summary_set_data(ServiceSummaryLayer *layer, char *origin, char *de
   service_summary_data->operator_code = operator_code;
   service_summary_data->operator_info = operator_info(operator_code);
   service_summary_data->reason = reason;
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Reason: %s", reason);
 
   char *space_ptr = strchr(time, ' ');
   if (space_ptr == NULL)
