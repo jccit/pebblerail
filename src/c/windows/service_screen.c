@@ -137,7 +137,13 @@ static void deactivate_menu()
 
 static void show_service_summary()
 {
-  service_summary_set_data(s_service_summary_layer, s_calling_points[s_available_calling_points - 1].destination, s_operator, s_calling_points[s_available_calling_points - 1].departureTime);
+  service_summary_set_data(
+      s_service_summary_layer,
+      s_calling_points[0].destination,
+      s_calling_points[s_available_calling_points - 1].destination,
+      s_operator,
+      s_calling_points[s_available_calling_points - 1].departureTime);
+
   custom_status_bar_set_color(s_status_bar, service_summary_get_color(s_service_summary_layer));
 
   layer_set_hidden(s_service_summary_layer, false);
@@ -145,20 +151,6 @@ static void show_service_summary()
   layer_mark_dirty(s_service_summary_layer);
 
   window_set_click_config_provider(s_window, summary_click_config_provider);
-}
-
-static void menu_scroll(ClickRecognizerRef recognizer, bool up)
-{
-  menu_layer_set_selected_next(s_menu_layer, up, MenuRowAlignNone, true);
-  ScrollLayer *scroll_layer = menu_layer_get_scroll_layer(s_menu_layer);
-  if (up)
-  {
-    scroll_layer_scroll_up_click_handler(recognizer, scroll_layer);
-  }
-  else
-  {
-    scroll_layer_scroll_down_click_handler(recognizer, scroll_layer);
-  }
 }
 
 static void menu_up_handler(ClickRecognizerRef recognizer, void *context)
@@ -172,12 +164,12 @@ static void menu_up_handler(ClickRecognizerRef recognizer, void *context)
     return;
   }
 
-  menu_scroll(recognizer, true);
+  menu_layer_set_selected_next(s_menu_layer, true, MenuRowAlignCenter, true);
 }
 
 static void menu_down_handler(ClickRecognizerRef recognizer, void *context)
 {
-  menu_scroll(recognizer, false);
+  menu_layer_set_selected_next(s_menu_layer, false, MenuRowAlignCenter, true);
 }
 
 static void menu_click_config_provider(void *context)

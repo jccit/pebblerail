@@ -1,9 +1,11 @@
 #include "service_summary.h"
 #include "../tocs.h"
+#include "../utils.h"
 
 typedef struct
 {
   GRect bounds;
+  char *origin;
   char *destination;
   char *operator_code;
   char *time;
@@ -16,7 +18,8 @@ static void service_summary_update_proc(Layer *layer, GContext *ctx)
 {
   ServiceSummaryData *service_summary_data = (ServiceSummaryData *)layer_get_data(layer);
   GRect bounds = service_summary_data->bounds;
-  GFont font = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
+  GFont destination_font = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
+  GFont origin_font = fonts_get_system_font(FONT_KEY_GOTHIC_18);
   GFont operator_font = fonts_get_system_font(FONT_KEY_GOTHIC_14);
   GFont number_font = fonts_get_system_font(FONT_KEY_LECO_26_BOLD_NUMBERS_AM_PM);
   GColor bg_color = service_summary_data->operator_info.color;
@@ -26,14 +29,19 @@ static void service_summary_update_proc(Layer *layer, GContext *ctx)
   graphics_context_set_text_color(ctx, fg_color);
   graphics_context_set_stroke_color(ctx, GColorRed);
 
+  int16_t icon_size = 50;
+  int16_t horizontal_margin = 5 * 2;
+
 #ifdef PBL_ROUND
   int16_t icon_margin = 25;
-  int16_t icon_offset = icon_margin + 50 + 5;
+  int16_t icon_offset = icon_margin + icon_size + 5;
+  int16_t top_margin = 10;
   GTextAlignment time_alignment = GTextAlignmentLeft;
   GTextAlignment status_alignment = GTextAlignmentCenter;
 #else
   int16_t icon_margin = 5;
-  int16_t icon_offset = icon_margin + 50 + 5;
+  int16_t icon_offset = icon_margin + icon_size + 5;
+  int16_t top_margin = 10;
   GTextAlignment time_alignment = GTextAlignmentCenter;
   GTextAlignment status_alignment = GTextAlignmentLeft;
 #endif
@@ -42,21 +50,33 @@ static void service_summary_update_proc(Layer *layer, GContext *ctx)
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
   // Train icon
-  gdraw_command_image_draw(ctx, s_train_icon, GPoint(icon_margin, 15));
+  gdraw_command_image_draw(ctx, s_train_icon, GPoint(icon_margin, top_margin));
 
   // Time
   int16_t text_height = 30;
-  GRect time_bounds = GRect(icon_offset, 15 + (50 - text_height) / 2, (bounds.size.w) - (icon_offset + 5), text_height);
+  GRect time_bounds = GRect(icon_offset, top_margin + (icon_size - text_height) / 2, (bounds.size.w) - (icon_offset + horizontal_margin), text_height);
   // graphics_draw_rect(ctx, time_bounds);
   graphics_draw_text(ctx, service_summary_data->time, number_font, time_bounds, GTextOverflowModeWordWrap, time_alignment, NULL);
 
+  int16_t vertical_cursor = top_margin + icon_size + 2;
+
   // Operator
-  GRect operator_bounds = GRect(5, 15 + 50 + 5, (bounds.size.w) - 5, 20);
-  graphics_draw_text(ctx, service_summary_data->operator_info.name, operator_font, operator_bounds, GTextOverflowModeWordWrap, status_alignment, NULL);
+  GRect operator_bounds = GRect(5, vertical_cursor, (bounds.size.w) - 5, 20);
+  GSize operator_size = graphics_draw_text_get_size(ctx, service_summary_data->operator_info.name, operator_font, operator_bounds, GTextOverflowModeWordWrap, status_alignment);
+  vertical_cursor += operator_size.h + 4;
+
+  // Origin
+  char origin_text[64];
+  snprintf(origin_text, sizeof(origin_text), "From: %s", service_summary_data->origin);
+  GRect origin_bounds = GRect(horizontal_margin / 2, vertical_cursor, (bounds.size.w) - horizontal_margin, 40);
+  GSize origin_size = graphics_draw_text_get_size(ctx, origin_text, origin_font, origin_bounds, GTextOverflowModeWordWrap, status_alignment);
+  vertical_cursor += origin_size.h + 2;
 
   // Destination
-  GRect destination_bounds = GRect(5, 15 + 50 + 5 + 15, (bounds.size.w) - 5, 40);
-  graphics_draw_text(ctx, service_summary_data->destination, font, destination_bounds, GTextOverflowModeWordWrap, status_alignment, NULL);
+  char destination_text[64];
+  snprintf(destination_text, sizeof(destination_text), "To: %s", service_summary_data->destination);
+  GRect destination_bounds = GRect(horizontal_margin / 2, vertical_cursor, (bounds.size.w) - horizontal_margin, 40);
+  GSize destination_size = graphics_draw_text_get_size(ctx, destination_text, destination_font, destination_bounds, GTextOverflowModeWordWrap, status_alignment);
 }
 
 ServiceSummaryLayer *service_summary_init(GRect bounds)
@@ -82,9 +102,10 @@ void service_summary_deinit(ServiceSummaryLayer *layer)
   gdraw_command_image_destroy(s_train_icon);
 }
 
-void service_summary_set_data(ServiceSummaryLayer *layer, char *destination, char *operator_code, char *time)
+void service_summary_set_data(ServiceSummaryLayer *layer, char *origin, char *destination, char *operator_code, char *time)
 {
   ServiceSummaryData *service_summary_data = (ServiceSummaryData *)layer_get_data(layer);
+  service_summary_data->origin = origin;
   service_summary_data->destination = destination;
   service_summary_data->operator_code = operator_code;
   service_summary_data->operator_info = operator_info(operator_code);

@@ -27,3 +27,13 @@ TextLayer *create_error_layer(Window *window, char *message)
   text_layer_set_text_alignment(error_layer, GTextAlignmentCenter);
   return error_layer;
 }
+
+/**
+ * Draws text and returns the size of the text
+ */
+GSize graphics_draw_text_get_size(GContext *ctx, char *text, GFont font, GRect bounds, GTextOverflowMode overflow_mode, GTextAlignment alignment)
+{
+  GSize size = graphics_text_layout_get_content_size(text, font, bounds, overflow_mode, alignment);
+  graphics_draw_text(ctx, text, font, bounds, overflow_mode, alignment, NULL);
+  return size;
+}
