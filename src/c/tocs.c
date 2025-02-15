@@ -4,7 +4,7 @@
 #define OPERATOR_INFO(code, name, color)      \
   if (strcmp(requested_code, code) == 0)      \
   {                                           \
-    return (OperatorInfo){name, GColorBlack}; \
+    return (OperatorInfo){name, GColorWhite}; \
   }
 #else
 #define OPERATOR_INFO(code, name, color) \
