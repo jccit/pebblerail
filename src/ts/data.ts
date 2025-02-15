@@ -1,5 +1,9 @@
 import { calculateTime } from "./time";
-import { TrainService, TrainServiceDetails } from "./types/service";
+import {
+  TrainLocationEntry,
+  TrainService,
+  TrainServiceDetails,
+} from "./types/service";
 import { StationWithDistance } from "./types/station";
 
 function sendSingleMessage(item: Record<string, any>, callback: () => void) {
@@ -73,6 +77,15 @@ export function sendDepartureList(departures: TrainService[]) {
   sendItem(serialised, 0);
 }
 
+function getDestination(callingPoints: TrainLocationEntry[]) {
+  for (let i = callingPoints.length - 1; i >= 0; i--) {
+    if (!callingPoints[i].skipped) {
+      return callingPoints[i].location.crs;
+    }
+  }
+  return "";
+}
+
 export function sendServiceInfo(service: TrainServiceDetails) {
   const callingPoints = service.locations;
 
@@ -97,9 +110,7 @@ export function sendServiceInfo(service: TrainServiceDetails) {
     };
   });
 
-  const destination =
-    callingPoints.toReversed().find((location) => !location.skipped)?.location
-      .crs || "";
+  const destination = getDestination(callingPoints);
 
   const serviceInfo = {
     objectType: "serviceInfo",
