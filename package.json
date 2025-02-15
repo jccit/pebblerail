@@ -60,6 +60,26 @@
           "type": "raw",
           "name": "TRAIN_LARGE",
           "file": "train_large.pdc"
+        },
+        {
+          "type": "png",
+          "name": "DOWN_ARROW_BLACK",
+          "file": "down_arrow_black.png"
+        },
+        {
+          "type": "png",
+          "name": "DOWN_ARROW_WHITE",
+          "file": "down_arrow_white.png"
+        },
+        {
+          "type": "png",
+          "name": "UP_ARROW_BLACK",
+          "file": "up_arrow_black.png"
+        },
+        {
+          "type": "png",
+          "name": "UP_ARROW_WHITE",
+          "file": "up_arrow_white.png"
         }
       ],
       "publishedMedia": [

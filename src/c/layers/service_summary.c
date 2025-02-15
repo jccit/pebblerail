@@ -13,21 +13,31 @@ typedef struct
 } ServiceSummaryData;
 
 static GDrawCommandImage *s_train_icon;
+static GBitmap *s_down_icon_black;
+static GBitmap *s_down_icon_white;
+static GRect s_down_icon_bounds;
+static GFont s_destination_font;
+static GFont s_origin_font;
+static GFont s_operator_font;
+static GFont s_number_font;
 
 static void service_summary_update_proc(Layer *layer, GContext *ctx)
 {
   ServiceSummaryData *service_summary_data = (ServiceSummaryData *)layer_get_data(layer);
   GRect bounds = service_summary_data->bounds;
-  GFont destination_font = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
-  GFont origin_font = fonts_get_system_font(FONT_KEY_GOTHIC_18);
-  GFont operator_font = fonts_get_system_font(FONT_KEY_GOTHIC_14);
-  GFont number_font = fonts_get_system_font(FONT_KEY_LECO_26_BOLD_NUMBERS_AM_PM);
   GColor bg_color = service_summary_data->operator_info.color;
   GColor fg_color = gcolor_legible_over(bg_color);
+  GBitmap *down_icon = s_down_icon_white;
+
+  if (gcolor_equal(fg_color, GColorBlack))
+  {
+    down_icon = s_down_icon_black;
+  }
 
   graphics_context_set_fill_color(ctx, bg_color);
   graphics_context_set_text_color(ctx, fg_color);
   graphics_context_set_stroke_color(ctx, GColorRed);
+  graphics_context_set_compositing_mode(ctx, GCompOpSet);
 
   int16_t icon_size = 50;
   int16_t horizontal_margin = 5 * 2;
@@ -55,33 +65,45 @@ static void service_summary_update_proc(Layer *layer, GContext *ctx)
   // Time
   int16_t text_height = 30;
   GRect time_bounds = GRect(icon_offset, top_margin + (icon_size - text_height) / 2, (bounds.size.w) - (icon_offset + horizontal_margin), text_height);
-  // graphics_draw_rect(ctx, time_bounds);
-  graphics_draw_text(ctx, service_summary_data->time, number_font, time_bounds, GTextOverflowModeWordWrap, time_alignment, NULL);
+  graphics_draw_text(ctx, service_summary_data->time, s_number_font, time_bounds, GTextOverflowModeWordWrap, time_alignment, NULL);
 
   int16_t vertical_cursor = top_margin + icon_size + 2;
 
   // Operator
   GRect operator_bounds = GRect(5, vertical_cursor, (bounds.size.w) - 5, 20);
-  GSize operator_size = graphics_draw_text_get_size(ctx, service_summary_data->operator_info.name, operator_font, operator_bounds, GTextOverflowModeWordWrap, status_alignment);
+  GSize operator_size = graphics_draw_text_get_size(ctx, service_summary_data->operator_info.name, s_operator_font, operator_bounds, GTextOverflowModeWordWrap, status_alignment);
   vertical_cursor += operator_size.h + 4;
 
   // Origin
   char origin_text[64];
   snprintf(origin_text, sizeof(origin_text), "From: %s", service_summary_data->origin);
   GRect origin_bounds = GRect(horizontal_margin / 2, vertical_cursor, (bounds.size.w) - horizontal_margin, 40);
-  GSize origin_size = graphics_draw_text_get_size(ctx, origin_text, origin_font, origin_bounds, GTextOverflowModeWordWrap, status_alignment);
+  GSize origin_size = graphics_draw_text_get_size(ctx, origin_text, s_origin_font, origin_bounds, GTextOverflowModeWordWrap, status_alignment);
   vertical_cursor += origin_size.h + 2;
 
   // Destination
   char destination_text[64];
   snprintf(destination_text, sizeof(destination_text), "To: %s", service_summary_data->destination);
   GRect destination_bounds = GRect(horizontal_margin / 2, vertical_cursor, (bounds.size.w) - horizontal_margin, 40);
-  GSize destination_size = graphics_draw_text_get_size(ctx, destination_text, destination_font, destination_bounds, GTextOverflowModeWordWrap, status_alignment);
+  GSize destination_size = graphics_draw_text_get_size(ctx, destination_text, s_destination_font, destination_bounds, GTextOverflowModeWordWrap, status_alignment);
+
+  // Down arrow
+  GPoint icon_position = GPoint((bounds.size.w / 2) - (s_down_icon_bounds.size.w / 2), bounds.size.h - s_down_icon_bounds.size.h - 4);
+  GRect icon_bounds = GRect(icon_position.x, icon_position.y, s_down_icon_bounds.size.w, s_down_icon_bounds.size.h);
+  graphics_draw_bitmap_in_rect(ctx, down_icon, icon_bounds);
 }
 
 ServiceSummaryLayer *service_summary_init(GRect bounds)
 {
   s_train_icon = gdraw_command_image_create_with_resource(RESOURCE_ID_TRAIN_SMALL);
+  s_down_icon_black = gbitmap_create_with_resource(RESOURCE_ID_DOWN_ARROW_BLACK);
+  s_down_icon_white = gbitmap_create_with_resource(RESOURCE_ID_DOWN_ARROW_WHITE);
+  s_destination_font = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
+  s_origin_font = fonts_get_system_font(FONT_KEY_GOTHIC_18);
+  s_operator_font = fonts_get_system_font(FONT_KEY_GOTHIC_14);
+  s_number_font = fonts_get_system_font(FONT_KEY_LECO_26_BOLD_NUMBERS_AM_PM);
+
+  s_down_icon_bounds = gbitmap_get_bounds(s_down_icon_black);
 
   ServiceSummaryLayer *service_summary_layer = layer_create_with_data(bounds, sizeof(ServiceSummaryData));
   layer_set_update_proc(service_summary_layer, service_summary_update_proc);
