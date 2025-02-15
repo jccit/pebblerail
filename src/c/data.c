@@ -144,9 +144,11 @@ void request_departures(char *crs)
   send_data_request(COMMAND_TYPE_DEPARTURES, crs, strlen(crs));
 }
 
-void request_service(char *service_id)
+void request_service(char *service_id, char *from_crs)
 {
-  send_data_request(COMMAND_TYPE_SERVICE, service_id, strlen(service_id));
+  char combined[256];
+  snprintf(combined, sizeof(combined), "%s;%s", service_id, from_crs);
+  send_data_request(COMMAND_TYPE_SERVICE, combined, strlen(combined));
 }
 
 void set_closest_station_callback(void (*callback)(DictionaryIterator *iter))

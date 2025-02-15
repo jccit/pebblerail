@@ -86,8 +86,20 @@ function getDestination(callingPoints: TrainLocationEntry[]) {
   return "";
 }
 
-export function sendServiceInfo(service: TrainServiceDetails) {
-  const callingPoints = service.locations;
+function getLocationIndex(callingPoints: TrainLocationEntry[], crs: string) {
+  for (let i = 0; i < callingPoints.length; i++) {
+    if (callingPoints[i].location.crs === crs) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+export function sendServiceInfo(service: TrainServiceDetails, fromCrs: string) {
+  const originIndex = getLocationIndex(service.locations, fromCrs);
+  const callingPoints = service.locations.slice(
+    originIndex < 0 ? 0 : originIndex
+  );
 
   const serialised = callingPoints.map((location) => {
     const time = calculateTime(

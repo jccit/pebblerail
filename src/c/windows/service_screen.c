@@ -359,7 +359,7 @@ void load_service()
 
   set_service_info_callback(service_info_callback);
   set_calling_point_callback(calling_point_callback);
-  request_service(s_service_info.serviceID);
+  request_service(s_service_info.serviceID, s_service_info.origin);
 }
 
 static void init_action_menu()

@@ -47,9 +47,9 @@ Pebble.addEventListener("appmessage", (e) => {
       departures(crs);
       break;
     case "serviceInfo":
-      const serviceID = dict.requestData;
+      const [serviceID, fromCrs] = dict.requestData.split(";");
       console.log(`Service info for ${serviceID} requested`);
-      serviceInfo(serviceID);
+      serviceInfo(serviceID, fromCrs);
       break;
     case "pinCallingPoint":
       const [pinServiceID, pinCrs, type] = dict.requestData.split(";");
@@ -119,8 +119,8 @@ function departures(crs: string) {
   });
 }
 
-function serviceInfo(serviceID: string) {
+function serviceInfo(serviceID: string, fromCrs: string) {
   getServiceInfo(serviceID, (service) => {
-    sendServiceInfo(service);
+    sendServiceInfo(service, fromCrs);
   });
 }
