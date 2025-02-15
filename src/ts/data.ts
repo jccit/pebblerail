@@ -2,6 +2,12 @@ import { calculateTime } from "./time";
 import { TrainService, TrainServiceDetails } from "./types/service";
 import { StationWithDistance } from "./types/station";
 
+function sendSingleMessage(item: Record<string, any>, callback: () => void) {
+  Pebble.sendAppMessage(item, callback, () => {
+    console.log("failed to send item", JSON.stringify(item));
+  });
+}
+
 function sendItem(items: Record<string, any>, index: number) {
   const item = items[index];
 
@@ -81,22 +87,41 @@ export function sendServiceInfo(service: TrainServiceDetails) {
     }
 
     return {
-      objectType: "serviceInfo",
+      objectType: "callingPoint",
       count: callingPoints.length,
       locationName: location.location.locationName,
       crs: location.location.crs,
       time: timeString,
       platform: location.platform || "-1",
+      skipped: location.skipped,
     };
   });
 
-  console.log(`Sending ${serialised.length} calling points`);
+  const destination =
+    callingPoints.toReversed().find((location) => !location.skipped)?.location
+      .crs || "";
 
-  if (serialised.length === 0) {
-    console.log("Sending empty calling points list");
-    sendItem([{ objectType: "serviceInfo", count: 0 }], 0);
-    return;
-  }
+  const serviceInfo = {
+    objectType: "serviceInfo",
+    serviceID: service.rid,
+    origin: service.locations[0].location.crs,
+    destination,
+    operatorCode: service.operatorCode,
+    isCancelled: service.isCancelled,
+    cancelReason: service.cancelReason || "",
+    delayReason: service.delayReason || "",
+  };
 
-  sendItem(serialised, 0);
+  console.log("Sending service info", JSON.stringify(serviceInfo));
+  sendSingleMessage(serviceInfo, () => {
+    console.log(`Sending ${serialised.length} calling points`);
+
+    if (serialised.length === 0) {
+      console.log("Sending empty calling points list");
+      sendItem([{ objectType: "serviceInfo", count: 0 }], 0);
+      return;
+    }
+
+    sendItem(serialised, 0);
+  });
 }

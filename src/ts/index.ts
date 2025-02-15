@@ -120,7 +120,7 @@ function departures(crs: string) {
 }
 
 function serviceInfo(serviceID: string) {
-  getServiceInfo(serviceID, (service) => {
+  getServiceInfo("202502156749284", (service) => {
     sendServiceInfo(service);
   });
 }

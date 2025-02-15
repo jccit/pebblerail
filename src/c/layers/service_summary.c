@@ -9,6 +9,7 @@ typedef struct
   char *destination;
   char *operator_code;
   char *time;
+  char *lateness;
   OperatorInfo operator_info;
 } ServiceSummaryData;
 
@@ -131,9 +132,28 @@ void service_summary_set_data(ServiceSummaryLayer *layer, char *origin, char *de
   service_summary_data->destination = destination;
   service_summary_data->operator_code = operator_code;
   service_summary_data->operator_info = operator_info(operator_code);
-  service_summary_data->time = time;
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Got operator info %s = %s", operator_code, service_summary_data->operator_info.name);
+  char *space_ptr = strchr(time, ' ');
+  if (space_ptr == NULL)
+  {
+    service_summary_data->time = time;
+    service_summary_data->lateness = "";
+  }
+  else
+  {
+    size_t time_length = space_ptr - time;
+    strncpy(service_summary_data->time, time, time_length);
+    service_summary_data->time[time_length] = '\0';
+
+    char *lateness_start = strchr(time, '(') + 1;
+    char *lateness_end = strchr(time, 'm') + 1;
+    size_t lateness_length = lateness_end - lateness_start;
+
+    char *lateness = malloc(lateness_length + 1);
+    strncpy(lateness, lateness_start, lateness_length);
+    lateness[lateness_length] = '\0';
+    service_summary_data->lateness = lateness;
+  }
 
   layer_mark_dirty(layer);
 }

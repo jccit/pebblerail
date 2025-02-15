@@ -30,19 +30,6 @@ typedef enum
   MENU_ACTION_PIN = 2
 } DepartureMenuAction;
 
-#define EXTRACT_TUPLE(iter, key, var)                          \
-  Tuple *var##_tuple = dict_find(iter, MESSAGE_KEY_##key);     \
-  if (!var##_tuple)                                            \
-  {                                                            \
-    APP_LOG(APP_LOG_LEVEL_ERROR, "No " #key " data received"); \
-    return;                                                    \
-  }                                                            \
-  char *var = var##_tuple->value->cstring;
-
-#define COPY_STRING(dest, src)          \
-  strncpy(dest, src, sizeof(dest) - 1); \
-  dest[sizeof(dest) - 1] = '\0';
-
 static void action_performed_callback(ActionMenu *action_menu, const ActionMenuItem *action, void *context)
 {
   DepartureMenuAction selected_action = (DepartureMenuAction)action_menu_item_get_action_data(action);
@@ -50,7 +37,7 @@ static void action_performed_callback(ActionMenu *action_menu, const ActionMenuI
 
   if (selected_action == MENU_ACTION_VIEW_STOPS)
   {
-    service_screen_init(s_departures[s_selected_departure_index].serviceID, s_departures[s_selected_departure_index].operatorCode);
+    service_screen_init(s_departures[s_selected_departure_index].serviceID);
   }
   else if (selected_action == MENU_ACTION_PIN)
   {

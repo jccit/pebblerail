@@ -36,7 +36,13 @@
       "crs",
       "time",
       "platform",
-      "operatorCode"
+      "operatorCode",
+      "skipped",
+      "isCancelled",
+      "cancelReason",
+      "delayReason",
+      "origin",
+      "destination"
     ],
     "resources": {
       "media": [

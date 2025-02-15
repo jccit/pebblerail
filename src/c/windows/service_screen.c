@@ -14,10 +14,6 @@ static MenuLayer *s_menu_layer;
 static Layer *s_spinner_layer;
 static TextLayer *s_error_layer;
 static ServiceSummaryLayer *s_service_summary_layer;
-static char *s_service_id;
-static char *s_operator;
-static char *s_origin;
-static char *s_destination;
 
 #define ACTION_MENU_NUM_ITEMS 2
 static ActionMenu *s_action_menu;
@@ -28,6 +24,7 @@ static uint8_t s_selected_calling_point_index = 0;
 static struct CallingPointEntry s_calling_points[MAX_CALLING_POINT_COUNT];
 static uint8_t s_calling_point_count = 0;
 static uint8_t s_available_calling_points = 0;
+static ServiceInfo s_service_info;
 
 typedef enum
 {
@@ -46,7 +43,7 @@ static void action_performed_callback(ActionMenu *action_menu, const ActionMenuI
   }
   else if (selected_action == MENU_ACTION_PIN)
   {
-    pin_calling_point(s_service_id, s_calling_points[s_selected_calling_point_index].crs, true);
+    pin_calling_point(s_service_info.serviceID, s_calling_points[s_selected_calling_point_index].crs, true);
   }
 }
 
@@ -69,14 +66,14 @@ static void menu_draw_row_callback(GContext *ctx, const Layer *cell_layer, MenuI
   menu_cell_basic_draw(ctx, cell_layer, s_calling_points[index].destination, s_calling_points[index].departureTime, NULL);
 #else
   int index = cell_index->row;
-  journey_item_draw(ctx, cell_layer, s_calling_points[index].crs == s_origin, &s_calling_points[index]);
+  journey_item_draw(ctx, cell_layer, s_calling_points[index].crs == s_service_info.origin, &s_calling_points[index]);
 #endif
 }
 
 static void menu_draw_header_callback(GContext *ctx, const Layer *cell_layer, uint16_t section_index, void *data)
 {
   char combined_text[32];
-  snprintf(combined_text, sizeof(combined_text), "%s -> %s", s_origin, s_destination);
+  snprintf(combined_text, sizeof(combined_text), "%s -> %s", s_service_info.origin, s_service_info.destination);
 
   menu_section_header_draw(ctx, cell_layer, combined_text);
 }
@@ -110,6 +107,22 @@ static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_in
 
 // ------ END MENU LAYER CALLBACKS ------
 
+static CallingPointEntry *get_destination_calling_point()
+{
+  if (s_available_calling_points == s_calling_point_count)
+  {
+    for (int i = 0; i < s_available_calling_points; i++)
+    {
+      if (strcmp(s_calling_points[i].crs, s_service_info.destination) == 0)
+      {
+        return &s_calling_points[i];
+      }
+    }
+  }
+
+  return &s_calling_points[s_available_calling_points - 1];
+}
+
 // Forward declare click config providers
 static void menu_click_config_provider(void *context);
 static void summary_click_config_provider(void *context);
@@ -137,12 +150,15 @@ static void deactivate_menu()
 
 static void show_service_summary()
 {
+  CallingPointEntry *origin = &s_calling_points[0];
+  CallingPointEntry *destination = get_destination_calling_point();
+
   service_summary_set_data(
       s_service_summary_layer,
-      s_calling_points[0].destination,
-      s_calling_points[s_available_calling_points - 1].destination,
-      s_operator,
-      s_calling_points[s_available_calling_points - 1].departureTime);
+      origin->destination,
+      destination->destination,
+      s_service_info.operatorCode,
+      destination->departureTime);
 
   custom_status_bar_set_color(s_status_bar, service_summary_get_color(s_service_summary_layer));
 
@@ -201,8 +217,8 @@ static void service_load_complete()
 {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Received all %d calling points", s_available_calling_points);
 
-  s_origin = s_calling_points[0].crs;
-  s_destination = s_calling_points[s_available_calling_points - 1].crs;
+  COPY_STRING(s_service_info.origin, s_calling_points[0].crs);
+  COPY_STRING(s_service_info.destination, get_destination_calling_point()->crs);
 
   menu_layer_reload_data(s_menu_layer);
 
@@ -220,7 +236,24 @@ static void no_service()
   layer_add_child(window_get_root_layer(s_window), text_layer_get_layer(s_error_layer));
 }
 
-static void service_callback(DictionaryIterator *iter)
+static void service_info_callback(DictionaryIterator *iter)
+{
+  EXTRACT_TUPLE(iter, origin, origin);
+  EXTRACT_TUPLE(iter, destination, destination);
+  EXTRACT_TUPLE(iter, operatorCode, operatorCode);
+  EXTRACT_TUPLE(iter, isCancelled, isCancelled);
+  EXTRACT_TUPLE(iter, cancelReason, cancelReason);
+  EXTRACT_TUPLE(iter, delayReason, delayReason);
+
+  COPY_STRING(s_service_info.origin, origin);
+  COPY_STRING(s_service_info.destination, destination);
+  COPY_STRING(s_service_info.operatorCode, operatorCode);
+  COPY_STRING(s_service_info.cancelReason, cancelReason);
+  COPY_STRING(s_service_info.delayReason, delayReason);
+  s_service_info.isCancelled = isCancelled;
+}
+
+static void calling_point_callback(DictionaryIterator *iter)
 {
   layer_set_hidden(menu_layer_get_layer(s_menu_layer), true);
 
@@ -241,49 +274,17 @@ static void service_callback(DictionaryIterator *iter)
     return;
   }
 
-  Tuple *locationName_tuple = dict_find(iter, MESSAGE_KEY_locationName);
-  if (!locationName_tuple)
-  {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "No locationName data received");
-    return;
-  }
-  char *locationName = locationName_tuple->value->cstring;
+  EXTRACT_TUPLE(iter, locationName, locationName);
+  EXTRACT_TUPLE(iter, time, time);
+  EXTRACT_TUPLE(iter, platform, platform);
+  EXTRACT_TUPLE(iter, crs, crs);
+  EXTRACT_TUPLE(iter, skipped, skipped);
 
-  Tuple *time_tuple = dict_find(iter, MESSAGE_KEY_time);
-  if (!time_tuple)
-  {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "No time data received");
-    return;
-  }
-  char *time = time_tuple->value->cstring;
-
-  Tuple *platform_tuple = dict_find(iter, MESSAGE_KEY_platform);
-  if (!platform_tuple)
-  {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "No platform data received");
-    return;
-  }
-  char *platform = platform_tuple->value->cstring;
-
-  Tuple *crs_tuple = dict_find(iter, MESSAGE_KEY_crs);
-  if (!crs_tuple)
-  {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "No crs data received");
-    return;
-  }
-  char *crs = crs_tuple->value->cstring;
-
-  strncpy(s_calling_points[s_calling_point_count].destination, locationName, sizeof(s_calling_points[s_calling_point_count].destination) - 1);
-  s_calling_points[s_calling_point_count].destination[sizeof(s_calling_points[s_calling_point_count].destination) - 1] = '\0';
-
-  strncpy(s_calling_points[s_calling_point_count].departureTime, time, sizeof(s_calling_points[s_calling_point_count].departureTime) - 1);
-  s_calling_points[s_calling_point_count].departureTime[sizeof(s_calling_points[s_calling_point_count].departureTime) - 1] = '\0';
-
-  strncpy(s_calling_points[s_calling_point_count].platform, platform, sizeof(s_calling_points[s_calling_point_count].platform) - 1);
-  s_calling_points[s_calling_point_count].platform[sizeof(s_calling_points[s_calling_point_count].platform) - 1] = '\0';
-
-  strncpy(s_calling_points[s_calling_point_count].crs, crs, sizeof(s_calling_points[s_calling_point_count].crs) - 1);
-  s_calling_points[s_calling_point_count].crs[sizeof(s_calling_points[s_calling_point_count].crs) - 1] = '\0';
+  COPY_STRING(s_calling_points[s_calling_point_count].destination, locationName);
+  COPY_STRING(s_calling_points[s_calling_point_count].departureTime, time);
+  COPY_STRING(s_calling_points[s_calling_point_count].platform, platform);
+  COPY_STRING(s_calling_points[s_calling_point_count].crs, crs);
+  s_calling_points[s_calling_point_count].skipped = skipped;
 
   s_calling_point_count++;
 
@@ -299,8 +300,9 @@ void load_service()
 {
   s_calling_point_count = 0;
 
-  set_service_callback(service_callback);
-  request_service(s_service_id);
+  set_service_info_callback(service_info_callback);
+  set_calling_point_callback(calling_point_callback);
+  request_service(s_service_info.serviceID);
 }
 
 static void init_action_menu()
@@ -345,10 +347,9 @@ void service_window_unload(Window *window)
   service_screen_deinit();
 }
 
-void service_screen_init(char *service_id, char *operator_code)
+void service_screen_init(char *service_id)
 {
-  s_service_id = service_id;
-  s_operator = operator_code;
+  COPY_STRING(s_service_info.serviceID, service_id);
   s_window = window_create();
   window_set_window_handlers(s_window, (WindowHandlers){
                                            .load = service_window_load,

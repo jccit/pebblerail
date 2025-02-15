@@ -23,7 +23,8 @@ export interface TrainLocationEntry {
   arrival: TrainTime;
   departure: TrainTime;
 
-  lateness: string;
+  lateness?: string;
+  skipped: boolean;
 }
 
 export interface CurrentLocation {
@@ -35,6 +36,9 @@ export interface TrainServiceDetails {
   rid: string;
   operator: string;
   operatorCode: string;
+  isCancelled: boolean;
+  cancelReason?: string;
+  delayReason?: string;
   locations: TrainLocationEntry[];
   currentLocation: CurrentLocation;
 }
