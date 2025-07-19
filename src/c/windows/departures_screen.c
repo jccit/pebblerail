@@ -68,7 +68,7 @@ static void menu_draw_row_callback(GContext *ctx, const Layer *cell_layer, MenuI
     platform_display = "?";
   }
 
-  snprintf(combined_text, sizeof(combined_text), "%s - Platform %s",
+  snprintf(combined_text, sizeof(combined_text), "Dep %s - PL%s",
            s_departures[index].departureTime,
            platform_display);
 
