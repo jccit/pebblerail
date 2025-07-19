@@ -16,14 +16,36 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v6
 
-      - name: Install dependencies
+      - name: Install Pebble dependencies
         run: sudo apt-get update && sudo apt-get install -y libsdl1.2debian libfdt1
 
       - name: Install Pebble SDK
         run: uv tool install pebble-tool
 
-      - name: Build
-        run: pebble build
+      - name: Cache Pebble SDK
+        uses: actions/cache@v4
+        with:
+          path: ~/.pebble-sdk
+          key: pebble-sdk-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            pebble-sdk-${{ runner.os }}-
+
+      - name: Install Node dependencies
+        run: npm install
+
+      - name: Cache Node dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: node-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            node-${{ runner.os }}-
+
+      - name: Build JS
+        run: npm run build
+
+      - name: Build Pebble app
+        run: export PATH=$PATH:~/.pebble-sdk/SDKs/current/toolchain/arm-none-eabi/bin && pebble build
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
