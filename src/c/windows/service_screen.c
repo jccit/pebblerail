@@ -63,10 +63,11 @@ static void menu_draw_row_callback(GContext *ctx, const Layer *cell_layer, MenuI
 {
 #ifdef PBL_ROUND
   int index = cell_index->row;
-  menu_cell_basic_draw(ctx, cell_layer, s_calling_points[index].destination, s_calling_points[index].departureTime, NULL);
+  menu_cell_basic_draw(ctx, cell_layer, s_calling_points[index].destination, s_calling_points[index].time, NULL);
 #else
   int index = cell_index->row;
-  journey_item_draw(ctx, cell_layer, s_calling_points[index].crs == s_service_info.origin, &s_calling_points[index]);
+  bool start = strcmp(s_calling_points[index].crs, s_service_info.origin) == 0;
+  journey_item_draw(ctx, cell_layer, start, &s_calling_points[index]);
 #endif
 }
 
@@ -209,9 +210,11 @@ static void show_service_summary()
       origin->destination,
       destination->destination,
       s_service_info.operatorCode,
-      origin->departureTime,
+      origin->time,
       reason,
-      origin->platform);
+      origin->platform,
+      origin->state
+    );
 
   custom_status_bar_set_color(s_status_bar, service_summary_get_color(s_service_summary_layer));
 
@@ -335,19 +338,19 @@ static void calling_point_callback(DictionaryIterator *iter)
   EXTRACT_TUPLE(iter, time, time);
   EXTRACT_TUPLE(iter, platform, platform);
   EXTRACT_TUPLE(iter, crs, crs);
-  EXTRACT_TUPLE(iter, skipped, skipped);
+  EXTRACT_INT(iter, callingPointState, state);
 
   COPY_STRING(s_calling_points[s_calling_point_count].destination, locationName);
-  COPY_STRING(s_calling_points[s_calling_point_count].departureTime, time);
+  COPY_STRING(s_calling_points[s_calling_point_count].time, time);
   COPY_STRING(s_calling_points[s_calling_point_count].platform, platform);
   COPY_STRING(s_calling_points[s_calling_point_count].crs, crs);
-  s_calling_points[s_calling_point_count].skipped = skipped;
+  s_calling_points[s_calling_point_count].state = state;
 
-  to_local_time(time, s_calling_points[s_calling_point_count].departureTime);
+  to_local_time(time, s_calling_points[s_calling_point_count].time);
 
   s_calling_point_count++;
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Received calling point %d: %s, %s, %s", s_calling_point_count, s_calling_points[s_calling_point_count - 1].destination, s_calling_points[s_calling_point_count - 1].departureTime, s_calling_points[s_calling_point_count - 1].platform);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Received calling point %d: %s, %s, %s", s_calling_point_count, s_calling_points[s_calling_point_count - 1].destination, s_calling_points[s_calling_point_count - 1].time, s_calling_points[s_calling_point_count - 1].platform);
 
   if (s_calling_point_count == s_available_calling_points)
   {

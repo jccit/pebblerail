@@ -1,6 +1,13 @@
 import { Location } from "./location";
 import { TrainTime } from "./time";
 
+export enum CallingPointState {
+  Skipped = -1,
+  NotArrived = 0,
+  Arrived = 1,
+  Departed = 2,
+}
+
 export interface TrainService {
   origin: Location;
   destination: Location;

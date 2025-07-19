@@ -13,6 +13,7 @@ typedef struct
   char *platform;
   char *reason;
   OperatorInfo operator_info;
+  CallingPointState state;
 } ServiceSummaryData;
 
 static GDrawCommandImage *s_train_icon;
@@ -146,7 +147,7 @@ void service_summary_deinit(ServiceSummaryLayer *layer)
   gdraw_command_image_destroy(s_train_icon);
 }
 
-void service_summary_set_data(ServiceSummaryLayer *layer, char *origin, char *destination, char *operator_code, char *time, char *reason, char *platform)
+void service_summary_set_data(ServiceSummaryLayer *layer, char *origin, char *destination, char *operator_code, char *time, char *reason, char *platform, CallingPointState state)
 {
   ServiceSummaryData *service_summary_data = (ServiceSummaryData *)layer_get_data(layer);
   service_summary_data->origin = origin;
@@ -154,6 +155,7 @@ void service_summary_set_data(ServiceSummaryLayer *layer, char *origin, char *de
   service_summary_data->operator_code = operator_code;
   service_summary_data->operator_info = operator_info(operator_code);
   service_summary_data->reason = reason;
+  service_summary_data->state = state;
 
   char *space_ptr = strchr(time, ' ');
   if (space_ptr == NULL)

@@ -37,7 +37,7 @@
       "time",
       "platform",
       "operatorCode",
-      "skipped",
+      "callingPointState",
       "isCancelled",
       "cancelReason",
       "delayReason",

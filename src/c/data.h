@@ -11,6 +11,15 @@
   }                                                            \
   char *var = var##_tuple->value->cstring;
 
+#define EXTRACT_INT(iter, key, var)                            \
+  Tuple *var##_tuple = dict_find(iter, MESSAGE_KEY_##key);     \
+  if (!var##_tuple)                                            \
+  {                                                            \
+    APP_LOG(APP_LOG_LEVEL_ERROR, "No " #key " data received"); \
+    return;                                                    \
+  }                                                            \
+  int var = var##_tuple->value->int32;
+
 #define COPY_STRING(dest, src)          \
   strncpy(dest, src, sizeof(dest) - 1); \
   dest[sizeof(dest) - 1] = '\0';
@@ -24,13 +33,21 @@ typedef enum
   COMMAND_TYPE_PIN_CALLING_POINT = 4
 } CommandType;
 
+typedef enum
+{
+  CALLING_POINT_STATE_SKIPPED = -1,
+  CALLING_POINT_STATE_NOT_ARRIVED = 0,
+  CALLING_POINT_STATE_ARRIVED = 1,
+  CALLING_POINT_STATE_DEPARTED = 2,
+} CallingPointState;
+
 typedef struct CallingPointEntry
 {
   char destination[30];
-  char departureTime[20];
+  char time[20];
   char platform[3];
   char crs[4];
-  bool skipped;
+  CallingPointState state;
 } CallingPointEntry;
 
 typedef struct ServiceInfo

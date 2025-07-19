@@ -1,5 +1,6 @@
 import { calculateTime } from "./time";
 import {
+  CallingPointState,
   TrainLocationEntry,
   TrainService,
   TrainServiceDetails,
@@ -111,6 +112,20 @@ export function sendServiceInfo(service: TrainServiceDetails, fromCrs: string) {
       timeString = `${time.actual} (${time.lateness}m late)`;
     }
 
+    let state = CallingPointState.NotArrived;
+
+    if (location.arrival.actual) {
+      state = CallingPointState.Arrived;
+    }
+
+    if (location.departure.actual) {
+      state = CallingPointState.Departed;
+    }
+
+    if (location.skipped) {
+      state = CallingPointState.Skipped;
+    }
+
     return {
       objectType: "callingPoint",
       count: callingPoints.length,
@@ -118,7 +133,7 @@ export function sendServiceInfo(service: TrainServiceDetails, fromCrs: string) {
       crs: location.location.crs,
       time: timeString,
       platform: location.platform || "-1",
-      skipped: location.skipped,
+      callingPointState: state,
     };
   });
 
