@@ -164,6 +164,8 @@ static void departures_callback(DictionaryIterator *iter)
   COPY_STRING(s_departures[s_departure_count].serviceID, serviceID);
   COPY_STRING(s_departures[s_departure_count].operatorCode, operatorCode);
 
+  to_local_time(time, s_departures[s_departure_count].departureTime);
+
   s_departure_count++;
 
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Received departure %d: %s, %s, %s, %s", s_departure_count, s_departures[s_departure_count - 1].serviceID, s_departures[s_departure_count - 1].destination, s_departures[s_departure_count - 1].departureTime, s_departures[s_departure_count - 1].platform);

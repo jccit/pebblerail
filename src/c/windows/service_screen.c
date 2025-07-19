@@ -343,6 +343,8 @@ static void calling_point_callback(DictionaryIterator *iter)
   COPY_STRING(s_calling_points[s_calling_point_count].crs, crs);
   s_calling_points[s_calling_point_count].skipped = skipped;
 
+  to_local_time(time, s_calling_points[s_calling_point_count].departureTime);
+
   s_calling_point_count++;
 
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Received calling point %d: %s, %s, %s", s_calling_point_count, s_calling_points[s_calling_point_count - 1].destination, s_calling_points[s_calling_point_count - 1].departureTime, s_calling_points[s_calling_point_count - 1].platform);
