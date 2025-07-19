@@ -20,7 +20,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libsdl1.2debian libfdt1
 
       - name: Install Pebble SDK
-        run: uv tool install pebble-tool
+        run: uv tool install pebble-tool && pebble sdk install latest
 
       - name: Cache Pebble SDK
         uses: actions/cache@v4
@@ -42,7 +42,7 @@ jobs:
             node-${{ runner.os }}-
 
       - name: Build JS
-        run: npm run build
+        run: mkdir src/ts/gen && npm run build
 
       - name: Build Pebble app
         run: export PATH=$PATH:~/.pebble-sdk/SDKs/current/toolchain/arm-none-eabi/bin && pebble build
