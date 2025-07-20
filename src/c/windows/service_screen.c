@@ -28,6 +28,10 @@ static uint8_t s_available_calling_points = 0;
 static ServiceInfo s_service_info;
 static bool s_is_loading = false;
 
+static GRect s_menu_frame_start;
+
+const int MENU_ANIMATION_DURATION = 150;
+
 void load_service();
 
 typedef enum { MENU_ACTION_VIEW_DEPARTURES = 1, MENU_ACTION_PIN = 2 } ServiceMenuAction;
@@ -119,22 +123,69 @@ static CallingPointEntry *get_destination_calling_point() { return &s_calling_po
 static void menu_click_config_provider(void *context);
 static void summary_click_config_provider(void *context);
 
+static GRect get_menu_offscreen_frame() {
+  return GRect(s_menu_frame_start.origin.x, s_menu_frame_start.origin.y + s_menu_frame_start.size.h, s_menu_frame_start.size.w,
+               s_menu_frame_start.size.h);
+}
+
+static void animate_menu_in() {
+  Layer *menu_layer = menu_layer_get_layer(s_menu_layer);
+  GRect start = get_menu_offscreen_frame();
+  GRect end = s_menu_frame_start;
+
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Menu anim start: %d, %d, %d, %d", start.origin.x, start.origin.y, start.size.w, start.size.h);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Menu anim end: %d, %d, %d, %d", end.origin.x, end.origin.y, end.size.w, end.size.h);
+
+  PropertyAnimation *prop_anim = property_animation_create_layer_frame(menu_layer, &start, &end);
+  Animation *anim = property_animation_get_animation(prop_anim);
+  animation_set_curve(anim, AnimationCurveEaseOut);
+  animation_set_duration(anim, MENU_ANIMATION_DURATION);
+  animation_schedule(anim);
+
+  layer_set_hidden(menu_layer_get_layer(s_menu_layer), false);
+}
+
+static void menu_animated_out_callback(Animation *animation, bool finished, void *context) {
+  layer_set_hidden(menu_layer_get_layer(s_menu_layer), true);
+}
+
+static void animate_menu_out() {
+  Layer *menu_layer = menu_layer_get_layer(s_menu_layer);
+  GRect start = s_menu_frame_start;
+  GRect end = get_menu_offscreen_frame();
+
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Menu anim start: %d, %d, %d, %d", start.origin.x, start.origin.y, start.size.w, start.size.h);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Menu anim end: %d, %d, %d, %d", end.origin.x, end.origin.y, end.size.w, end.size.h);
+
+  PropertyAnimation *prop_anim = property_animation_create_layer_frame(menu_layer, &start, &end);
+  Animation *anim = property_animation_get_animation(prop_anim);
+  animation_set_curve(anim, AnimationCurveEaseOut);
+  animation_set_duration(anim, MENU_ANIMATION_DURATION);
+  animation_set_handlers(anim,
+                         (AnimationHandlers){
+                             .stopped = menu_animated_out_callback,
+                         },
+                         NULL);
+  animation_schedule(anim);
+}
+
 // Displays the menu and binds the click handler
 static void activate_menu() {
   custom_status_bar_set_color(s_status_bar, GColorWhite);
-
-  layer_set_hidden(s_service_summary_layer, true);
-  layer_set_hidden(menu_layer_get_layer(s_menu_layer), false);
-  layer_mark_dirty(menu_layer_get_layer(s_menu_layer));
 
   scroll_layer_set_callbacks(menu_layer_get_scroll_layer(s_menu_layer), (ScrollLayerCallbacks){
                                                                             .click_config_provider = menu_click_config_provider,
                                                                         });
   menu_layer_set_click_config_onto_window(s_menu_layer, s_window);
+
+  service_summary_animate_out(s_service_summary_layer);
+  animate_menu_in();
 }
 
-// Hides the menu and unbinds the click handler
-static void deactivate_menu() { layer_set_hidden(menu_layer_get_layer(s_menu_layer), true); }
+static void deactivate_menu() {
+  animate_menu_out();
+  service_summary_animate_in(s_service_summary_layer);
+}
 
 static void show_service_summary() {
   CallingPointEntry *origin = get_origin_calling_point();
@@ -167,8 +218,6 @@ static void show_service_summary() {
   custom_status_bar_set_color(s_status_bar, service_summary_get_color(s_service_summary_layer));
 
   layer_set_hidden(s_service_summary_layer, false);
-  layer_set_hidden(menu_layer_get_layer(s_menu_layer), true);
-  layer_mark_dirty(s_service_summary_layer);
 
   window_set_click_config_provider(s_window, summary_click_config_provider);
 }
@@ -334,7 +383,8 @@ void service_window_load(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
   GRect bounds_status_bar = bounds_with_status_bar(window);
-  s_menu_layer = menu_layer_create(bounds_status_bar);
+  s_menu_frame_start = bounds_status_bar;
+  s_menu_layer = menu_layer_create(get_menu_offscreen_frame());
 
   menu_layer_set_callbacks(s_menu_layer, NULL,
                            (MenuLayerCallbacks){

@@ -3,6 +3,8 @@
 #include "../tocs.h"
 #include "../utils.h"
 
+const int SUMMARY_ANIMATION_DURATION = 150;
+
 typedef struct {
   GRect bounds;
   char *origin;
@@ -188,4 +190,38 @@ void service_summary_set_data(ServiceSummaryLayer *layer, char *origin, char *de
 GColor service_summary_get_color(ServiceSummaryLayer *layer) {
   ServiceSummaryData *service_summary_data = (ServiceSummaryData *)layer_get_data(layer);
   return service_summary_data->operator_info.color;
+}
+
+void service_summary_animate_out(ServiceSummaryLayer *summary_layer) {
+  Layer *layer = (Layer *)summary_layer;
+  ServiceSummaryData *service_summary_data = (ServiceSummaryData *)layer_get_data(layer);
+
+  GRect start = service_summary_data->bounds;
+  GRect end = GRect(start.origin.x, start.origin.y - start.size.h, start.size.w, start.size.h);
+
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Service summary anim start: %d, %d, %d, %d", start.origin.x, start.origin.y, start.size.w, start.size.h);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Service summary anim end: %d, %d, %d, %d", end.origin.x, end.origin.y, end.size.w, end.size.h);
+
+  PropertyAnimation *prop_anim = property_animation_create_layer_frame(layer, &start, &end);
+  Animation *anim = property_animation_get_animation(prop_anim);
+  animation_set_curve(anim, AnimationCurveEaseOut);
+  animation_set_duration(anim, SUMMARY_ANIMATION_DURATION);
+  animation_schedule(anim);
+}
+
+void service_summary_animate_in(ServiceSummaryLayer *summary_layer) {
+  Layer *layer = (Layer *)summary_layer;
+  ServiceSummaryData *service_summary_data = (ServiceSummaryData *)layer_get_data(layer);
+
+  GRect end = service_summary_data->bounds;
+  GRect start = GRect(end.origin.x, end.origin.y - end.size.h, end.size.w, end.size.h);
+
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Service summary anim start: %d, %d, %d, %d", start.origin.x, start.origin.y, start.size.w, start.size.h);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Service summary anim end: %d, %d, %d, %d", end.origin.x, end.origin.y, end.size.w, end.size.h);
+
+  PropertyAnimation *prop_anim = property_animation_create_layer_frame(layer, &start, &end);
+  Animation *anim = property_animation_get_animation(prop_anim);
+  animation_set_curve(anim, AnimationCurveEaseOut);
+  animation_set_duration(anim, SUMMARY_ANIMATION_DURATION);
+  animation_schedule(anim);
 }
