@@ -47,14 +47,9 @@ static uint16_t menu_get_num_sections_callback(MenuLayer *menu_layer, void *data
 static uint16_t menu_get_num_rows_callback(MenuLayer *menu_layer, uint16_t section_index, void *data) { return s_calling_point_count; }
 
 static void menu_draw_row_callback(GContext *ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data) {
-#ifdef PBL_ROUND
-  int index = cell_index->row;
-  menu_cell_basic_draw(ctx, cell_layer, s_calling_points[index].destination, s_calling_points[index].time, NULL);
-#else
   int index = cell_index->row;
   bool start = strcmp(s_calling_points[index].crs, s_service_info.origin) == 0;
   journey_item_draw(ctx, cell_layer, start, &s_calling_points[index]);
-#endif
 }
 
 static void menu_draw_header_callback(GContext *ctx, const Layer *cell_layer, uint16_t section_index, void *data) {
