@@ -11,10 +11,16 @@
 
 static Window *s_window;
 static StatusBarLayer *s_status_bar;
-static MenuLayer *s_menu_layer;
 static Layer *s_spinner_layer;
 static TextLayer *s_error_layer;
 static ServiceSummaryLayer *s_service_summary_layer;
+
+#ifdef PBL_ROUND
+#include "../layers/round_route_path.h"
+static Layer *s_route_path_layer;
+#else
+static MenuLayer *s_menu_layer;
+#endif
 
 #define ACTION_MENU_NUM_ITEMS 2
 static ActionMenu *s_action_menu;
@@ -27,6 +33,7 @@ static uint8_t s_calling_point_count = 0;
 static uint8_t s_available_calling_points = 0;
 static ServiceInfo s_service_info;
 static bool s_is_loading = false;
+static bool s_is_menu_active = false;
 
 static GRect s_menu_frame_start;
 
@@ -47,16 +54,20 @@ static void action_performed_callback(ActionMenu *action_menu, const ActionMenuI
   }
 }
 
+#ifndef PBL_ROUND
 // ------ MENU LAYER CALLBACKS ------
 
 static uint16_t menu_get_num_sections_callback(MenuLayer *menu_layer, void *data) { return 1; }
 
 static uint16_t menu_get_num_rows_callback(MenuLayer *menu_layer, uint16_t section_index, void *data) { return s_calling_point_count; }
 
+static int16_t menu_get_cell_height_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data) { return 46; }
+
 static void menu_draw_row_callback(GContext *ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data) {
   int index = cell_index->row;
   bool start = strcmp(s_calling_points[index].crs, s_service_info.origin) == 0;
-  journey_item_draw(ctx, cell_layer, start, &s_calling_points[index]);
+  bool end = strcmp(s_calling_points[index].crs, s_service_info.destination) == 0;
+  journey_item_draw(ctx, cell_layer, start, end, &s_calling_points[index]);
 }
 
 static void menu_draw_header_callback(GContext *ctx, const Layer *cell_layer, uint16_t section_index, void *data) {
@@ -89,6 +100,7 @@ static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_in
 }
 
 // ------ END MENU LAYER CALLBACKS ------
+#endif
 
 static uint16_t get_origin_calling_point_index() {
   if (s_available_calling_points == s_calling_point_count) {
@@ -120,7 +132,9 @@ static CallingPointEntry *get_origin_calling_point() { return &s_calling_points[
 static CallingPointEntry *get_destination_calling_point() { return &s_calling_points[get_destination_calling_point_index()]; }
 
 // Forward declare click config providers
+#ifndef PBL_ROUND
 static void menu_click_config_provider(void *context);
+#endif
 static void summary_click_config_provider(void *context);
 
 static GRect get_menu_offscreen_frame() {
@@ -129,7 +143,12 @@ static GRect get_menu_offscreen_frame() {
 }
 
 static void animate_menu_in() {
+#ifdef PBL_ROUND
+  Layer *menu_layer = s_route_path_layer;
+#else
   Layer *menu_layer = menu_layer_get_layer(s_menu_layer);
+#endif
+
   GRect start = get_menu_offscreen_frame();
   GRect end = s_menu_frame_start;
 
@@ -142,15 +161,28 @@ static void animate_menu_in() {
   animation_set_duration(anim, MENU_ANIMATION_DURATION);
   animation_schedule(anim);
 
+#ifdef PBL_ROUND
+  layer_set_hidden(s_route_path_layer, false);
+#else
   layer_set_hidden(menu_layer_get_layer(s_menu_layer), false);
+#endif
 }
 
 static void menu_animated_out_callback(Animation *animation, bool finished, void *context) {
+#ifdef PBL_ROUND
+  layer_set_hidden(s_route_path_layer, true);
+#else
   layer_set_hidden(menu_layer_get_layer(s_menu_layer), true);
+#endif
 }
 
 static void animate_menu_out() {
+#ifdef PBL_ROUND
+  Layer *menu_layer = s_route_path_layer;
+#else
   Layer *menu_layer = menu_layer_get_layer(s_menu_layer);
+#endif
+
   GRect start = s_menu_frame_start;
   GRect end = get_menu_offscreen_frame();
 
@@ -171,18 +203,29 @@ static void animate_menu_out() {
 
 // Displays the menu and binds the click handler
 static void activate_menu() {
+  s_is_menu_active = true;
   custom_status_bar_set_color(s_status_bar, GColorWhite);
 
+#ifndef PBL_ROUND
   scroll_layer_set_callbacks(menu_layer_get_scroll_layer(s_menu_layer), (ScrollLayerCallbacks){
                                                                             .click_config_provider = menu_click_config_provider,
                                                                         });
   menu_layer_set_click_config_onto_window(s_menu_layer, s_window);
+#else
+  layer_set_hidden(status_bar_layer_get_layer(s_status_bar), true);
+#endif
 
   service_summary_animate_out(s_service_summary_layer);
   animate_menu_in();
 }
 
 static void deactivate_menu() {
+  s_is_menu_active = false;
+
+#ifdef PBL_ROUND
+  layer_set_hidden(status_bar_layer_get_layer(s_status_bar), false);
+#endif
+
   animate_menu_out();
   service_summary_animate_in(s_service_summary_layer);
 }
@@ -222,6 +265,7 @@ static void show_service_summary() {
   window_set_click_config_provider(s_window, summary_click_config_provider);
 }
 
+#ifndef PBL_ROUND
 static void menu_up_handler(ClickRecognizerRef recognizer, void *context) {
   MenuIndex index = menu_layer_get_selected_index(s_menu_layer);
   if (index.row == 0) {
@@ -253,6 +297,7 @@ static void menu_click_config_provider(void *context) {
   window_single_click_subscribe(BUTTON_ID_DOWN, menu_down_handler);
   window_single_click_subscribe(BUTTON_ID_SELECT, menu_select_handler);
 }
+#endif
 
 static void create_service_summary() {
   GRect bounds = bounds_with_status_bar_no_padding(s_window);
@@ -267,11 +312,39 @@ static void window_double_select_handler(ClickRecognizerRef recognizer, void *co
 }
 
 static void window_down_handler(ClickRecognizerRef recognizer, void *context) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Switching to calling point list");
-  activate_menu();
+  if (!s_is_menu_active) {
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Switching to calling point list");
+    activate_menu();
+    return;
+  }
+
+#ifdef PBL_ROUND
+  if (!round_route_next_calling_point(s_route_path_layer)) {
+    return;
+  }
+#endif
+}
+
+static void window_up_handler(ClickRecognizerRef recognizer, void *context) {
+  if (!s_is_menu_active) {
+    return;
+  }
+
+#ifdef PBL_ROUND
+  if (!round_route_previous_calling_point(s_route_path_layer)) {
+    return;
+  }
+#endif
+
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Switching to service summary");
+  deactivate_menu();
+  show_service_summary();
 }
 
 static void summary_click_config_provider(void *context) {
+#ifdef PBL_ROUND
+  window_single_click_subscribe(BUTTON_ID_UP, window_up_handler);
+#endif
   window_single_click_subscribe(BUTTON_ID_DOWN, window_down_handler);
   window_long_click_subscribe(BUTTON_ID_SELECT, 300, window_double_select_handler, NULL);
 }
@@ -282,15 +355,25 @@ static void service_load_complete() {
 
   COPY_STRING(s_service_info.destination, get_destination_calling_point()->crs);
 
+#ifndef PBL_ROUND
   menu_layer_reload_data(s_menu_layer);
+#endif
 
   show_service_summary();
 
   layer_set_hidden(s_spinner_layer, true);
+
+#ifdef PBL_ROUND
+  round_route_path_set_data(s_route_path_layer, s_calling_points, s_available_calling_points, s_service_info.operatorCode);
+#endif
 }
 
 static void no_service() {
+#ifdef PBL_ROUND
+  layer_set_hidden(s_route_path_layer, true);
+#else
   layer_set_hidden(menu_layer_get_layer(s_menu_layer), true);
+#endif
   layer_set_hidden(s_spinner_layer, true);
 
   s_error_layer = create_error_layer(s_window, "Service not found");
@@ -312,7 +395,9 @@ static void service_info_callback(DictionaryIterator *iter) {
 }
 
 static void calling_point_callback(DictionaryIterator *iter) {
+#ifndef PBL_ROUND
   layer_set_hidden(menu_layer_get_layer(s_menu_layer), true);
+#endif
 
   Tuple *count_tuple = dict_find(iter, MESSAGE_KEY_count);
   if (!count_tuple) {
@@ -383,6 +468,14 @@ void service_window_load(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
   GRect bounds_status_bar = bounds_with_status_bar(window);
+
+  s_spinner_layer = spinner_layer_init(bounds);
+
+#ifdef PBL_ROUND
+  s_menu_frame_start = bounds;
+  s_route_path_layer = round_route_path_init(get_menu_offscreen_frame());
+  layer_add_child(window_layer, s_route_path_layer);
+#else
   s_menu_frame_start = bounds_status_bar;
   s_menu_layer = menu_layer_create(get_menu_offscreen_frame());
 
@@ -391,16 +484,16 @@ void service_window_load(Window *window) {
                                .get_num_sections = menu_get_num_sections_callback,
                                .get_num_rows = menu_get_num_rows_callback,
                                .get_header_height = menu_get_header_height_callback,
+                               .get_cell_height = menu_get_cell_height_callback,
                                .draw_row = menu_draw_row_callback,
                                .draw_header = menu_draw_header_callback,
                                .select_click = menu_select_click_callback,
                            });
 
   layer_set_hidden(menu_layer_get_layer(s_menu_layer), true);
-
-  s_spinner_layer = spinner_layer_init(bounds);
-
   layer_add_child(window_layer, menu_layer_get_layer(s_menu_layer));
+#endif
+
   layer_add_child(window_layer, s_spinner_layer);
   create_service_summary();
   layer_add_child(window_layer, status_bar_layer_get_layer(s_status_bar));
@@ -428,7 +521,12 @@ void service_screen_init(char *service_id, char *origin) {
 }
 
 void service_screen_deinit() {
+  s_is_menu_active = false;
+  s_is_loading = false;
+
   custom_status_bar_layer_destroy(s_status_bar);
+#ifndef PBL_ROUND
   menu_layer_destroy(s_menu_layer);
+#endif
   window_destroy(s_window);
 }
