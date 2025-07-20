@@ -2,20 +2,17 @@
 
 #ifdef PBL_BW
 #define OPERATOR_INFO(code, name, color)      \
-  if (strcmp(requested_code, code) == 0)      \
-  {                                           \
+  if (strcmp(requested_code, code) == 0) {    \
     return (OperatorInfo){name, GColorWhite}; \
   }
 #else
-#define OPERATOR_INFO(code, name, color) \
-  if (strcmp(requested_code, code) == 0) \
-  {                                      \
-    return (OperatorInfo){name, color};  \
+#define OPERATOR_INFO(code, name, color)   \
+  if (strcmp(requested_code, code) == 0) { \
+    return (OperatorInfo){name, color};    \
   }
 #endif
 
-OperatorInfo operator_info(char *requested_code)
-{
+OperatorInfo operator_info(char *requested_code) {
   OPERATOR_INFO("AW", "Transport for Wales", GColorRed);
   OPERATOR_INFO("CC", "c2c", GColorPurple);
   OPERATOR_INFO("CH", "Chiltern Railways", GColorCyan);

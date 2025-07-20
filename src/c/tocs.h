@@ -2,8 +2,7 @@
 
 #include <pebble.h>
 
-typedef struct
-{
+typedef struct {
   char *name;
   GColor color;
 } OperatorInfo;

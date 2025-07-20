@@ -1,9 +1,9 @@
 #include "service_summary.h"
+
 #include "../tocs.h"
 #include "../utils.h"
 
-typedef struct
-{
+typedef struct {
   GRect bounds;
   char *origin;
   char *destination;
@@ -25,8 +25,7 @@ static GFont s_origin_font;
 static GFont s_operator_font;
 static GFont s_number_font;
 
-static void service_summary_update_proc(Layer *layer, GContext *ctx)
-{
+static void service_summary_update_proc(Layer *layer, GContext *ctx) {
   ServiceSummaryData *service_summary_data = (ServiceSummaryData *)layer_get_data(layer);
   GRect bounds = service_summary_data->bounds;
   GColor bg_color = service_summary_data->operator_info.color;
@@ -36,8 +35,7 @@ static void service_summary_update_proc(Layer *layer, GContext *ctx)
   bool show_lateness = service_summary_data->lateness != NULL;
   bool show_platform = service_summary_data->platform != NULL;
 
-  if (gcolor_equal(fg_color, GColorBlack))
-  {
+  if (gcolor_equal(fg_color, GColorBlack)) {
     down_icon = s_down_icon_black;
   }
 
@@ -76,15 +74,13 @@ static void service_summary_update_proc(Layer *layer, GContext *ctx)
   graphics_draw_text(ctx, service_summary_data->time, s_number_font, time_bounds, GTextOverflowModeWordWrap, time_alignment, NULL);
 
   // Platform
-  if (show_platform)
-  {
+  if (show_platform) {
     GRect platform_bounds = GRect(icon_offset, time_vertical_pos - 1, time_width, 20);
     graphics_draw_text(ctx, service_summary_data->platform, s_operator_font, platform_bounds, GTextOverflowModeWordWrap, time_alignment, NULL);
   }
 
   // Late
-  if (show_lateness)
-  {
+  if (show_lateness) {
     GRect late_bounds = GRect(icon_offset, time_vertical_pos + 34, time_width, 20);
     graphics_draw_text(ctx, service_summary_data->lateness, s_operator_font, late_bounds, GTextOverflowModeWordWrap, time_alignment, NULL);
   }
@@ -94,7 +90,8 @@ static void service_summary_update_proc(Layer *layer, GContext *ctx)
   // Operator / reason
   char *operator_text = show_reason ? service_summary_data->reason : service_summary_data->operator_info.name;
   GRect operator_bounds = GRect(5, vertical_cursor, (bounds.size.w) - 10, 40);
-  GSize operator_size = graphics_draw_text_get_size(ctx, operator_text, s_operator_font, operator_bounds, GTextOverflowModeWordWrap, status_alignment);
+  GSize operator_size =
+      graphics_draw_text_get_size(ctx, operator_text, s_operator_font, operator_bounds, GTextOverflowModeWordWrap, status_alignment);
   vertical_cursor += operator_size.h + 2;
 
   // Origin
@@ -108,7 +105,8 @@ static void service_summary_update_proc(Layer *layer, GContext *ctx)
   char destination_text[64];
   snprintf(destination_text, sizeof(destination_text), "To: %s", service_summary_data->destination);
   GRect destination_bounds = GRect(horizontal_margin / 2, vertical_cursor, (bounds.size.w) - horizontal_margin, 40);
-  GSize destination_size = graphics_draw_text_get_size(ctx, destination_text, s_destination_font, destination_bounds, GTextOverflowModeWordWrap, status_alignment);
+  // GSize destination_size = graphics_draw_text_get_size(ctx, destination_text, s_destination_font, destination_bounds, GTextOverflowModeWordWrap,
+  // status_alignment);
 
   // Down arrow
   GPoint icon_position = GPoint((bounds.size.w / 2) - (s_down_icon_bounds.size.w / 2), bounds.size.h - s_down_icon_bounds.size.h - 4);
@@ -116,8 +114,7 @@ static void service_summary_update_proc(Layer *layer, GContext *ctx)
   graphics_draw_bitmap_in_rect(ctx, down_icon, icon_bounds);
 }
 
-ServiceSummaryLayer *service_summary_init(GRect bounds)
-{
+ServiceSummaryLayer *service_summary_init(GRect bounds) {
   s_train_icon = gdraw_command_image_create_with_resource(RESOURCE_ID_TRAIN_SMALL);
   s_down_icon_black = gbitmap_create_with_resource(RESOURCE_ID_DOWN_ARROW_BLACK);
   s_down_icon_white = gbitmap_create_with_resource(RESOURCE_ID_DOWN_ARROW_WHITE);
@@ -141,14 +138,13 @@ ServiceSummaryLayer *service_summary_init(GRect bounds)
   return service_summary_layer;
 }
 
-void service_summary_deinit(ServiceSummaryLayer *layer)
-{
+void service_summary_deinit(ServiceSummaryLayer *layer) {
   layer_destroy(layer);
   gdraw_command_image_destroy(s_train_icon);
 }
 
-void service_summary_set_data(ServiceSummaryLayer *layer, char *origin, char *destination, char *operator_code, char *time, char *reason, char *platform, CallingPointState state)
-{
+void service_summary_set_data(ServiceSummaryLayer *layer, char *origin, char *destination, char *operator_code, char *time, char *reason,
+                              char *platform, CallingPointState state) {
   ServiceSummaryData *service_summary_data = (ServiceSummaryData *)layer_get_data(layer);
   service_summary_data->origin = origin;
   service_summary_data->destination = destination;
@@ -158,13 +154,10 @@ void service_summary_set_data(ServiceSummaryLayer *layer, char *origin, char *de
   service_summary_data->state = state;
 
   char *space_ptr = strchr(time, ' ');
-  if (space_ptr == NULL)
-  {
+  if (space_ptr == NULL) {
     service_summary_data->time = time;
     service_summary_data->lateness = NULL;
-  }
-  else
-  {
+  } else {
     size_t time_length = space_ptr - time;
     strncpy(service_summary_data->time, time, time_length);
     service_summary_data->time[time_length] = '\0';
@@ -192,8 +185,7 @@ void service_summary_set_data(ServiceSummaryLayer *layer, char *origin, char *de
   layer_mark_dirty(layer);
 }
 
-GColor service_summary_get_color(ServiceSummaryLayer *layer)
-{
+GColor service_summary_get_color(ServiceSummaryLayer *layer) {
   ServiceSummaryData *service_summary_data = (ServiceSummaryData *)layer_get_data(layer);
   return service_summary_data->operator_info.color;
 }

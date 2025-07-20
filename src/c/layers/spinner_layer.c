@@ -6,21 +6,18 @@ const uint32_t spinner_angle_gap = 60;
 const uint32_t spinner_angle_increment = 10;
 const uint32_t spinner_line_width = 8;
 
-typedef struct
-{
+typedef struct {
   uint32_t angle;
   GPoint center;
   GRect bounds;
   AppTimer *timer;
 } SpinnerData;
 
-void spinner_layer_update_proc(Layer *layer, GContext *ctx)
-{
+void spinner_layer_update_proc(Layer *layer, GContext *ctx) {
   SpinnerData *spinner_data = (SpinnerData *)layer_get_data(layer);
 
   spinner_data->angle += spinner_angle_increment;
-  if (spinner_data->angle >= 360)
-  {
+  if (spinner_data->angle >= 360) {
     spinner_data->angle = 0;
   }
 
@@ -49,8 +46,7 @@ void spinner_layer_update_proc(Layer *layer, GContext *ctx)
   graphics_draw_text(ctx, "Loading...", font, text_bounds, GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
 }
 
-void spinner_timer_callback(void *context)
-{
+void spinner_timer_callback(void *context) {
   Layer *spinner_layer = (Layer *)context;
   SpinnerData *spinner_data = (SpinnerData *)layer_get_data(spinner_layer);
 
@@ -59,8 +55,7 @@ void spinner_timer_callback(void *context)
   spinner_data->timer = app_timer_register(spinner_interval_ms, spinner_timer_callback, spinner_layer);
 }
 
-SpinnerLayer *spinner_layer_init(GRect bounds)
-{
+SpinnerLayer *spinner_layer_init(GRect bounds) {
   SpinnerLayer *spinner_layer = layer_create_with_data(bounds, sizeof(SpinnerData));
   layer_set_update_proc(spinner_layer, spinner_layer_update_proc);
   layer_mark_dirty(spinner_layer);
@@ -78,8 +73,7 @@ SpinnerLayer *spinner_layer_init(GRect bounds)
   return spinner_layer;
 }
 
-void spinner_layer_deinit(Layer *spinner_layer)
-{
+void spinner_layer_deinit(Layer *spinner_layer) {
   SpinnerData *spinner_data = (SpinnerData *)layer_get_data(spinner_layer);
   app_timer_cancel(spinner_data->timer);
   layer_destroy(spinner_layer);

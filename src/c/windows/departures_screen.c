@@ -1,10 +1,11 @@
 #include "departures_screen.h"
-#include "service_screen.h"
+
 #include "../data.h"
-#include "../utils.h"
+#include "../layers/menu_header.h"
 #include "../layers/spinner_layer.h"
 #include "../layers/status_bar.h"
-#include "../layers/menu_header.h"
+#include "../utils.h"
+#include "service_screen.h"
 
 static Window *s_window;
 static StatusBarLayer *s_status_bar;
@@ -24,83 +25,59 @@ static struct DepartureEntry s_departures[MAX_DEPARTURE_COUNT];
 static uint8_t s_departure_count = 0;
 static uint8_t s_available_departures = 0;
 
-typedef enum
-{
-  MENU_ACTION_VIEW_STOPS = 1,
-  MENU_ACTION_PIN = 2
-} DepartureMenuAction;
+typedef enum { MENU_ACTION_VIEW_STOPS = 1, MENU_ACTION_PIN = 2 } DepartureMenuAction;
 
-static void action_performed_callback(ActionMenu *action_menu, const ActionMenuItem *action, void *context)
-{
+static void action_performed_callback(ActionMenu *action_menu, const ActionMenuItem *action, void *context) {
   DepartureMenuAction selected_action = (DepartureMenuAction)action_menu_item_get_action_data(action);
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Selected action: %d", selected_action);
 
-  if (selected_action == MENU_ACTION_VIEW_STOPS)
-  {
+  if (selected_action == MENU_ACTION_VIEW_STOPS) {
     service_screen_init(s_departures[s_selected_departure_index].serviceID, s_crs);
-  }
-  else if (selected_action == MENU_ACTION_PIN)
-  {
+  } else if (selected_action == MENU_ACTION_PIN) {
     pin_calling_point(s_departures[s_selected_departure_index].serviceID, s_crs, false);
   }
 }
 
 // ------ MENU LAYER CALLBACKS ------
 
-static uint16_t menu_get_num_sections_callback(MenuLayer *menu_layer, void *data)
-{
-  return 1;
-}
+static uint16_t menu_get_num_sections_callback(MenuLayer *menu_layer, void *data) { return 1; }
 
-static uint16_t menu_get_num_rows_callback(MenuLayer *menu_layer, uint16_t section_index, void *data)
-{
-  return s_departure_count;
-}
+static uint16_t menu_get_num_rows_callback(MenuLayer *menu_layer, uint16_t section_index, void *data) { return s_departure_count; }
 
-static void menu_draw_row_callback(GContext *ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data)
-{
+static void menu_draw_row_callback(GContext *ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data) {
   char combined_text[32];
   int index = cell_index->row;
   char *platform_display = s_departures[index].platform;
 
-  if (strcmp(platform_display, "un") == 0)
-  {
+  if (strcmp(platform_display, "un") == 0) {
     platform_display = "?";
   }
 
-  snprintf(combined_text, sizeof(combined_text), "Dep %s - PL%s",
-           s_departures[index].departureTime,
-           platform_display);
+  snprintf(combined_text, sizeof(combined_text), "Dep %s - PL%s", s_departures[index].departureTime, platform_display);
 
   menu_cell_basic_draw(ctx, cell_layer, s_departures[index].destination, combined_text, NULL);
 }
 
-static void menu_draw_header_callback(GContext *ctx, const Layer *cell_layer, uint16_t section_index, void *data)
-{
+static void menu_draw_header_callback(GContext *ctx, const Layer *cell_layer, uint16_t section_index, void *data) {
   menu_section_header_draw(ctx, cell_layer, s_stationName);
 }
 
-static int16_t menu_get_header_height_callback(MenuLayer *menu_layer, uint16_t section_index, void *data)
-{
-  return 20;
-}
+static int16_t menu_get_header_height_callback(MenuLayer *menu_layer, uint16_t section_index, void *data) { return 20; }
 
-static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data)
-{
+static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data) {
   // If the menu is hidden, don't allow clicks
-  if (layer_get_hidden(menu_layer_get_layer(s_menu_layer)))
-  {
+  if (layer_get_hidden(menu_layer_get_layer(s_menu_layer))) {
     return;
   }
 
   // Configure the ActionMenu Window about to be shown
-  ActionMenuConfig config = (ActionMenuConfig){
-      .root_level = s_root_level,
-      .colors = {
-          .background = GColorWhite,
-          .foreground = GColorBlack,
-      },
-      .align = ActionMenuAlignCenter};
+  ActionMenuConfig config = (ActionMenuConfig){.root_level = s_root_level,
+                                               .colors =
+                                                   {
+                                                       .background = GColorWhite,
+                                                       .foreground = GColorBlack,
+                                                   },
+                                               .align = ActionMenuAlignCenter};
 
   // Show the ActionMenu
   s_selected_departure_index = cell_index->row;
@@ -109,8 +86,7 @@ static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_in
 
 // ------ END MENU LAYER CALLBACKS ------
 
-static void departures_load_complete()
-{
+static void departures_load_complete() {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Received all %d departures", s_available_departures);
 
   menu_layer_reload_data(s_menu_layer);
@@ -120,8 +96,7 @@ static void departures_load_complete()
   spinner_layer_deinit(s_spinner_layer);
 }
 
-static void no_departures()
-{
+static void no_departures() {
   departures_load_complete();
   layer_set_hidden(menu_layer_get_layer(s_menu_layer), true);
 
@@ -129,13 +104,11 @@ static void no_departures()
   layer_add_child(window_get_root_layer(s_window), text_layer_get_layer(s_error_layer));
 }
 
-static void departures_callback(DictionaryIterator *iter)
-{
+static void departures_callback(DictionaryIterator *iter) {
   layer_set_hidden(menu_layer_get_layer(s_menu_layer), true);
 
   Tuple *count_tuple = dict_find(iter, MESSAGE_KEY_count);
-  if (!count_tuple)
-  {
+  if (!count_tuple) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "No departure data received");
     return;
   }
@@ -145,8 +118,7 @@ static void departures_callback(DictionaryIterator *iter)
 
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Set available departures to %d", s_available_departures);
 
-  if (s_available_departures == 0)
-  {
+  if (s_available_departures == 0) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "No departures received");
     no_departures();
     return;
@@ -168,24 +140,23 @@ static void departures_callback(DictionaryIterator *iter)
 
   s_departure_count++;
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Received departure %d: %s, %s, %s, %s", s_departure_count, s_departures[s_departure_count - 1].serviceID, s_departures[s_departure_count - 1].destination, s_departures[s_departure_count - 1].departureTime, s_departures[s_departure_count - 1].platform);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Received departure %d: %s, %s, %s, %s", s_departure_count, s_departures[s_departure_count - 1].serviceID,
+          s_departures[s_departure_count - 1].destination, s_departures[s_departure_count - 1].departureTime,
+          s_departures[s_departure_count - 1].platform);
 
-  if (s_departure_count == s_available_departures)
-  {
+  if (s_departure_count == s_available_departures) {
     departures_load_complete();
   }
 }
 
-void load_departures()
-{
+void load_departures() {
   s_departure_count = 0;
 
   set_departures_callback(departures_callback);
   request_departures(s_crs);
 }
 
-void departures_window_load(Window *window)
-{
+void departures_window_load(Window *window) {
   s_status_bar = custom_status_bar_layer_create();
 
   Layer *window_layer = window_get_root_layer(window);
@@ -193,14 +164,15 @@ void departures_window_load(Window *window)
   GRect bounds_status_bar = bounds_with_status_bar(window);
   s_menu_layer = menu_layer_create(bounds_status_bar);
 
-  menu_layer_set_callbacks(s_menu_layer, NULL, (MenuLayerCallbacks){
-                                                   .get_num_sections = menu_get_num_sections_callback,
-                                                   .get_num_rows = menu_get_num_rows_callback,
-                                                   .get_header_height = menu_get_header_height_callback,
-                                                   .draw_row = menu_draw_row_callback,
-                                                   .draw_header = menu_draw_header_callback,
-                                                   .select_click = menu_select_click_callback,
-                                               });
+  menu_layer_set_callbacks(s_menu_layer, NULL,
+                           (MenuLayerCallbacks){
+                               .get_num_sections = menu_get_num_sections_callback,
+                               .get_num_rows = menu_get_num_rows_callback,
+                               .get_header_height = menu_get_header_height_callback,
+                               .draw_row = menu_draw_row_callback,
+                               .draw_header = menu_draw_header_callback,
+                               .select_click = menu_select_click_callback,
+                           });
 
   menu_layer_set_click_config_onto_window(s_menu_layer, window);
   layer_set_hidden(menu_layer_get_layer(s_menu_layer), true);
@@ -213,21 +185,16 @@ void departures_window_load(Window *window)
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Station screen initialized");
 }
 
-static void init_action_menu()
-{
+static void init_action_menu() {
   s_root_level = action_menu_level_create(ACTION_MENU_NUM_ITEMS);
 
   action_menu_level_add_action(s_root_level, "View stops", action_performed_callback, (void *)MENU_ACTION_VIEW_STOPS);
   action_menu_level_add_action(s_root_level, "Pin to timeline", action_performed_callback, (void *)MENU_ACTION_PIN);
 }
 
-void departures_window_unload(Window *window)
-{
-  departures_screen_deinit();
-}
+void departures_window_unload(Window *window) { departures_screen_deinit(); }
 
-void departures_screen_init(char *crs, char *stationName)
-{
+void departures_screen_init(char *crs, char *stationName) {
   s_crs = crs;
   s_stationName = stationName;
   s_window = window_create();
@@ -242,8 +209,7 @@ void departures_screen_init(char *crs, char *stationName)
   init_action_menu();
 }
 
-void departures_screen_deinit()
-{
+void departures_screen_deinit() {
   custom_status_bar_layer_destroy(s_status_bar);
   menu_layer_destroy(s_menu_layer);
   window_destroy(s_window);

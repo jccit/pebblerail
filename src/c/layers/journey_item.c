@@ -6,9 +6,8 @@ char *skipped_text = "Skipped";
 char *not_arrived_text = "Arriving";
 char *departing_text = "Departing";
 
-void journey_item_draw(GContext *ctx, const Layer *cell_layer, bool start, CallingPointEntry *callingPoint)
-{
-  GRect bounds = layer_get_bounds(cell_layer);
+void journey_item_draw(GContext *ctx, const Layer *cell_layer, bool start, CallingPointEntry *callingPoint) {
+  // GRect bounds = layer_get_bounds(cell_layer);
 
   char combined_text[32];
   char *state_text = departed_text;
@@ -32,9 +31,7 @@ void journey_item_draw(GContext *ctx, const Layer *cell_layer, bool start, Calli
       break;
   }
 
-  snprintf(combined_text, sizeof(combined_text), "%s - %s",
-            state_text,
-            callingPoint->time);
+  snprintf(combined_text, sizeof(combined_text), "%s - %s", state_text, callingPoint->time);
 
   menu_cell_basic_draw(ctx, cell_layer, callingPoint->destination, combined_text, NULL);
 

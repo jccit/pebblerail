@@ -4,8 +4,7 @@
 
 #define EXTRACT_TUPLE(iter, key, var)                          \
   Tuple *var##_tuple = dict_find(iter, MESSAGE_KEY_##key);     \
-  if (!var##_tuple)                                            \
-  {                                                            \
+  if (!var##_tuple) {                                          \
     APP_LOG(APP_LOG_LEVEL_ERROR, "No " #key " data received"); \
     return;                                                    \
   }                                                            \
@@ -13,8 +12,7 @@
 
 #define EXTRACT_INT(iter, key, var)                            \
   Tuple *var##_tuple = dict_find(iter, MESSAGE_KEY_##key);     \
-  if (!var##_tuple)                                            \
-  {                                                            \
+  if (!var##_tuple) {                                          \
     APP_LOG(APP_LOG_LEVEL_ERROR, "No " #key " data received"); \
     return;                                                    \
   }                                                            \
@@ -24,8 +22,7 @@
   strncpy(dest, src, sizeof(dest) - 1); \
   dest[sizeof(dest) - 1] = '\0';
 
-typedef enum
-{
+typedef enum {
   COMMAND_TYPE_UNKNOWN = 0,
   COMMAND_TYPE_STATION_LIST = 1,
   COMMAND_TYPE_DEPARTURES = 2,
@@ -33,16 +30,14 @@ typedef enum
   COMMAND_TYPE_PIN_CALLING_POINT = 4
 } CommandType;
 
-typedef enum
-{
+typedef enum {
   CALLING_POINT_STATE_SKIPPED = -1,
   CALLING_POINT_STATE_NOT_ARRIVED = 0,
   CALLING_POINT_STATE_ARRIVED = 1,
   CALLING_POINT_STATE_DEPARTED = 2,
 } CallingPointState;
 
-typedef struct CallingPointEntry
-{
+typedef struct CallingPointEntry {
   char destination[30];
   char time[20];
   char platform[3];
@@ -50,8 +45,7 @@ typedef struct CallingPointEntry
   CallingPointState state;
 } CallingPointEntry;
 
-typedef struct ServiceInfo
-{
+typedef struct ServiceInfo {
   char serviceID[20];
   char origin[4];
   char destination[4];
@@ -61,15 +55,13 @@ typedef struct ServiceInfo
   bool isCancelled;
 } ServiceInfo;
 
-typedef struct Station
-{
+typedef struct Station {
   char name[30];
   char crs[4];
   char distance[9];
 } Station;
 
-typedef struct DepartureEntry
-{
+typedef struct DepartureEntry {
   char serviceID[20];
   char destination[30];
   char departureTime[6];
