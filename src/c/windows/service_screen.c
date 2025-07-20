@@ -56,7 +56,8 @@ static uint16_t menu_get_num_rows_callback(MenuLayer *menu_layer, uint16_t secti
 static void menu_draw_row_callback(GContext *ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data) {
   int index = cell_index->row;
   bool start = strcmp(s_calling_points[index].crs, s_service_info.origin) == 0;
-  journey_item_draw(ctx, cell_layer, start, &s_calling_points[index]);
+  bool end = strcmp(s_calling_points[index].crs, s_service_info.destination) == 0;
+  journey_item_draw(ctx, cell_layer, start, end, &s_calling_points[index]);
 }
 
 static void menu_draw_header_callback(GContext *ctx, const Layer *cell_layer, uint16_t section_index, void *data) {
