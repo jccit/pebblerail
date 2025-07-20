@@ -364,7 +364,7 @@ static void service_load_complete() {
   layer_set_hidden(s_spinner_layer, true);
 
 #ifdef PBL_ROUND
-  round_route_path_set_data(s_route_path_layer, s_calling_points, s_available_calling_points);
+  round_route_path_set_data(s_route_path_layer, s_calling_points, s_available_calling_points, s_service_info.operatorCode);
 #endif
 }
 

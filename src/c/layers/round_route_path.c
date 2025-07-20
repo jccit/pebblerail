@@ -1,11 +1,14 @@
 #include "round_route_path.h"
 
+#include "../tocs.h"
 #include "calling_point_icon.h"
 
 typedef struct {
   CallingPointEntry *callingPoints;
   int callingPointCount;
   int selected;
+  GColor operator_color;
+  GColor contrast_color;
   TextLayer *destination_layer;
   TextLayer *time_layer;
 } RoundRoutePathData;
@@ -18,6 +21,7 @@ typedef enum {
 static const uint32_t SCROLL_DURATION = 100 * 2;
 static const int16_t SCROLL_DIST_OUT = 20;
 static const int16_t SCROLL_DIST_IN = 8;
+static const int16_t BG_RADIUS = 62;
 
 Animation *round_route_out_anim(Layer *layer, uint32_t duration, int16_t dy) {
   GPoint to_origin = GPoint(0, dy);
@@ -107,6 +111,10 @@ void round_route_path_update_proc(Layer *layer, GContext *ctx) {
   }
 
   GRect bounds = layer_get_bounds(layer);
+  GPoint center = GPoint(bounds.size.w / 2, bounds.size.h / 2);
+  graphics_context_set_fill_color(ctx, data->operator_color);
+  graphics_fill_circle(ctx, center, BG_RADIUS);
+
   round_route_path_draw(ctx, bounds, data->callingPoints, data->callingPointCount, data->selected);
 }
 
@@ -120,7 +128,7 @@ Layer *round_route_path_init(GRect bounds) {
   int station_height = 20;
   int time_height = 22;
   int text_top = text_centre - (station_height + time_height) / 2;
-  int text_margin = 30;
+  int text_margin = BG_RADIUS / 2 + 5;
   int text_width = bounds.size.w - text_margin * 2;
 
   GFont station_font = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
@@ -143,11 +151,21 @@ Layer *round_route_path_init(GRect bounds) {
   return layer;
 }
 
-void round_route_path_set_data(Layer *layer, CallingPointEntry *callingPoints, int callingPointCount) {
+void round_route_path_set_data(Layer *layer, CallingPointEntry *callingPoints, int callingPointCount, char *operatorCode) {
   RoundRoutePathData *data = (RoundRoutePathData *)layer_get_data(layer);
   data->callingPoints = callingPoints;
   data->callingPointCount = callingPointCount;
   data->selected = 0;
+
+  OperatorInfo op_info = operator_info(operatorCode);
+  data->operator_color = op_info.color;
+  data->contrast_color = gcolor_legible_over(data->operator_color);
+
+  text_layer_set_text_color(data->destination_layer, data->contrast_color);
+  text_layer_set_text_color(data->time_layer, data->contrast_color);
+  text_layer_set_background_color(data->destination_layer, data->operator_color);
+  text_layer_set_background_color(data->time_layer, data->operator_color);
+
   text_layer_set_text(data->destination_layer, callingPoints[0].destination);
   text_layer_set_text(data->time_layer, callingPoints[0].time);
 }
