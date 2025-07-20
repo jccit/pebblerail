@@ -53,6 +53,8 @@ static uint16_t menu_get_num_sections_callback(MenuLayer *menu_layer, void *data
 
 static uint16_t menu_get_num_rows_callback(MenuLayer *menu_layer, uint16_t section_index, void *data) { return s_calling_point_count; }
 
+static int16_t menu_get_cell_height_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data) { return 46; }
+
 static void menu_draw_row_callback(GContext *ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data) {
   int index = cell_index->row;
   bool start = strcmp(s_calling_points[index].crs, s_service_info.origin) == 0;
@@ -392,6 +394,7 @@ void service_window_load(Window *window) {
                                .get_num_sections = menu_get_num_sections_callback,
                                .get_num_rows = menu_get_num_rows_callback,
                                .get_header_height = menu_get_header_height_callback,
+                               .get_cell_height = menu_get_cell_height_callback,
                                .draw_row = menu_draw_row_callback,
                                .draw_header = menu_draw_header_callback,
                                .select_click = menu_select_click_callback,
