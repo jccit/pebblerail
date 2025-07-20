@@ -26,6 +26,9 @@ static struct CallingPointEntry s_calling_points[MAX_CALLING_POINT_COUNT];
 static uint8_t s_calling_point_count = 0;
 static uint8_t s_available_calling_points = 0;
 static ServiceInfo s_service_info;
+static bool s_is_loading = false;
+
+void load_service();
 
 typedef enum { MENU_ACTION_VIEW_DEPARTURES = 1, MENU_ACTION_PIN = 2 } ServiceMenuAction;
 
@@ -183,6 +186,11 @@ static void menu_up_handler(ClickRecognizerRef recognizer, void *context) {
 }
 
 static void menu_down_handler(ClickRecognizerRef recognizer, void *context) {
+  // Don't allow switching to the the calling point list while loading
+  if (s_is_loading) {
+    return;
+  }
+
   menu_layer_set_selected_next(s_menu_layer, false, MenuRowAlignCenter, true);
 }
 
@@ -204,15 +212,24 @@ static void create_service_summary() {
   layer_set_hidden(s_service_summary_layer, true);
 }
 
+static void window_double_select_handler(ClickRecognizerRef recognizer, void *context) {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Reloading service data");
+  load_service();
+}
+
 static void window_down_handler(ClickRecognizerRef recognizer, void *context) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Switching to calling point list");
   activate_menu();
 }
 
-static void summary_click_config_provider(void *context) { window_single_click_subscribe(BUTTON_ID_DOWN, window_down_handler); }
+static void summary_click_config_provider(void *context) {
+  window_single_click_subscribe(BUTTON_ID_DOWN, window_down_handler);
+  window_long_click_subscribe(BUTTON_ID_SELECT, 300, window_double_select_handler, NULL);
+}
 
 static void service_load_complete() {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Received all %d calling points", s_available_calling_points);
+  s_is_loading = false;
 
   COPY_STRING(s_service_info.destination, get_destination_calling_point()->crs);
 
@@ -220,12 +237,12 @@ static void service_load_complete() {
 
   show_service_summary();
 
-  spinner_layer_deinit(s_spinner_layer);
+  layer_set_hidden(s_spinner_layer, true);
 }
 
 static void no_service() {
   layer_set_hidden(menu_layer_get_layer(s_menu_layer), true);
-  spinner_layer_deinit(s_spinner_layer);
+  layer_set_hidden(s_spinner_layer, true);
 
   s_error_layer = create_error_layer(s_window, "Service not found");
   layer_add_child(window_get_root_layer(s_window), text_layer_get_layer(s_error_layer));
@@ -289,7 +306,15 @@ static void calling_point_callback(DictionaryIterator *iter) {
 }
 
 void load_service() {
+  if (s_is_loading) {
+    return;
+  }
+
   s_calling_point_count = 0;
+  s_is_loading = true;
+
+  layer_set_hidden(s_spinner_layer, false);
+  layer_set_hidden(s_service_summary_layer, true);
 
   set_service_info_callback(service_info_callback);
   set_calling_point_callback(calling_point_callback);
