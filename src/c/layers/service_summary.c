@@ -4,6 +4,7 @@
 #include "../utils.h"
 
 const int SUMMARY_ANIMATION_DURATION = 150;
+const int SUMMARY_ANIMATION_Y_OFFSET = STATUS_BAR_LAYER_HEIGHT;
 
 typedef struct {
   GRect bounds;
@@ -197,7 +198,7 @@ void service_summary_animate_out(ServiceSummaryLayer *summary_layer) {
   ServiceSummaryData *service_summary_data = (ServiceSummaryData *)layer_get_data(layer);
 
   GRect start = service_summary_data->bounds;
-  GRect end = GRect(start.origin.x, start.origin.y - start.size.h, start.size.w, start.size.h);
+  GRect end = GRect(start.origin.x, start.origin.y - (start.size.h + SUMMARY_ANIMATION_Y_OFFSET), start.size.w, start.size.h);
 
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Service summary anim start: %d, %d, %d, %d", start.origin.x, start.origin.y, start.size.w, start.size.h);
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Service summary anim end: %d, %d, %d, %d", end.origin.x, end.origin.y, end.size.w, end.size.h);
@@ -214,7 +215,7 @@ void service_summary_animate_in(ServiceSummaryLayer *summary_layer) {
   ServiceSummaryData *service_summary_data = (ServiceSummaryData *)layer_get_data(layer);
 
   GRect end = service_summary_data->bounds;
-  GRect start = GRect(end.origin.x, end.origin.y - end.size.h, end.size.w, end.size.h);
+  GRect start = GRect(end.origin.x, end.origin.y - (end.size.h + SUMMARY_ANIMATION_Y_OFFSET), end.size.w, end.size.h);
 
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Service summary anim start: %d, %d, %d, %d", start.origin.x, start.origin.y, start.size.w, start.size.h);
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Service summary anim end: %d, %d, %d, %d", end.origin.x, end.origin.y, end.size.w, end.size.h);

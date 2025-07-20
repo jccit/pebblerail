@@ -1,5 +1,7 @@
 #include "journey_item.h"
 
+#include "calling_point_icon.h"
+
 const char *departed_text = "Departed";
 const char *arrived_text = "Arrived";
 const char *skipped_text = "Skipped";
@@ -10,8 +12,6 @@ const char *departing_text = "Departing";
 const int line_padding = 4;
 const int line_width = 4;
 const int circle_radius = 8;
-const int circle_45deg_point = 5;  // approximation of 8sin(0.25π), position on the circumference at a 45 degree angle
-const int circle_stroke_width = 2;
 
 int draw_route_line(GContext *ctx, GRect bounds, bool is_highlighted, bool start, bool end, CallingPointState state) {
   int left_pad = line_padding + circle_radius / 2;
@@ -37,36 +37,7 @@ int draw_route_line(GContext *ctx, GRect bounds, bool is_highlighted, bool start
     graphics_fill_rect(ctx, bottom_line_rect, 0, 0);
   }
 
-  switch (state) {
-    case CALLING_POINT_STATE_DEPARTED:
-    case CALLING_POINT_STATE_ARRIVED:
-      // solid circle
-      graphics_fill_circle(ctx, circle_centre, circle_radius);
-      break;
-
-    case CALLING_POINT_STATE_SKIPPED:
-      // red circle with cross
-      graphics_context_set_fill_color(ctx, warning_color);
-      graphics_fill_circle(ctx, circle_centre, circle_radius);
-      graphics_context_set_fill_color(ctx, warning_inset_color);
-      graphics_fill_circle(ctx, circle_centre, circle_radius - circle_stroke_width);
-
-      GPoint cross_start = GPoint(circle_centre.x - circle_45deg_point, circle_centre.y + circle_45deg_point);
-      GPoint cross_end = GPoint(circle_centre.x + circle_45deg_point, circle_centre.y - circle_45deg_point);
-
-      graphics_context_set_stroke_color(ctx, warning_color);
-      graphics_context_set_stroke_width(ctx, circle_stroke_width);
-      graphics_draw_line(ctx, cross_start, cross_end);
-      break;
-
-    case CALLING_POINT_STATE_NOT_ARRIVED:
-    default:
-      // circle with outline
-      graphics_fill_circle(ctx, circle_centre, circle_radius);
-      graphics_context_set_fill_color(ctx, accent_color);
-      graphics_fill_circle(ctx, circle_centre, circle_radius - circle_stroke_width);
-      break;
-  }
+  calling_point_icon_draw(ctx, circle_centre, circle_radius, fill_color, accent_color, warning_color, warning_inset_color, state);
 
   return circle_radius + line_padding + line_width;
 }
