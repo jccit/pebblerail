@@ -53,7 +53,7 @@ static void menu_draw_row_callback(GContext *ctx, const Layer *cell_layer, MenuI
     platform_display = "?";
   }
 
-  snprintf(combined_text, sizeof(combined_text), "Dep %s - PL%s", s_departures[index].departureTime, platform_display);
+  snprintf(combined_text, sizeof(combined_text), "Dep %s - Pl.%s", s_departures[index].departureTime, platform_display);
 
   menu_cell_basic_draw(ctx, cell_layer, s_departures[index].destination, combined_text, NULL);
 }
