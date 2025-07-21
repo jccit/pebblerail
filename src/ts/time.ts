@@ -9,13 +9,13 @@ export interface RenderedTime {
 
 function dateToTimeString(date: Date): string {
   const hours =
-    date.getHours().toString().length === 1
-      ? "0" + date.getHours()
-      : date.getHours().toString();
+    date.getUTCHours().toString().length === 1
+      ? "0" + date.getUTCHours()
+      : date.getUTCHours().toString();
   const minutes =
-    date.getMinutes().toString().length === 1
-      ? "0" + date.getMinutes()
-      : date.getMinutes().toString();
+    date.getUTCMinutes().toString().length === 1
+      ? "0" + date.getUTCMinutes()
+      : date.getUTCMinutes().toString();
   return `${hours}:${minutes}`;
 }
 

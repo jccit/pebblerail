@@ -32,9 +32,6 @@ GSize graphics_draw_text_get_size(GContext *ctx, char *text, GFont font, GRect b
 }
 
 void to_local_time(char *time_str, char *locale_time) {
-  strcpy(locale_time, time_str);
-
-  /*
   // time will be a 24 hour utc string like '17:30'
   // there could be extra stuff after the time like '17:30 +1'
   if (strlen(time_str) < 4) {
@@ -77,5 +74,4 @@ void to_local_time(char *time_str, char *locale_time) {
   struct tm *local_tm = localtime(&utc_time);
 
   strftime(locale_time, 6, "%H:%M", local_tm);
-  */
 }
