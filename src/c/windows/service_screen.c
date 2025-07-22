@@ -414,6 +414,11 @@ static void calling_point_callback(DictionaryIterator *iter) {
     return;
   }
 
+  if (s_calling_point_count >= s_available_calling_points) {
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Received more calling points than available: %d >= %d", s_calling_point_count, s_available_calling_points);
+    return;
+  }
+
   EXTRACT_TUPLE(iter, locationName, locationName);
   EXTRACT_TUPLE(iter, time, time);
   EXTRACT_TUPLE(iter, platform, platform);
