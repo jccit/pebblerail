@@ -462,6 +462,7 @@ void load_service() {
 
   s_calling_point_count = 0;
   s_is_loading = true;
+  s_is_menu_active = false;
 
   layer_set_hidden(s_spinner_layer, false);
   layer_set_hidden(s_service_summary_layer, true);
