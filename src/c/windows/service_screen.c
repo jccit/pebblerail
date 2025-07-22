@@ -27,7 +27,18 @@ static ActionMenu *s_action_menu;
 static ActionMenuLevel *s_root_level;
 static uint8_t s_selected_calling_point_index = 0;
 
+#if defined(PBL_PLATFORM_APLITE)
+// Aplite has limited RAM so restrict the number of calling points
 #define MAX_CALLING_POINT_COUNT 30
+#elif defined(PBL_ROUND)
+// Round has limited screen space so can't really show all calling points
+// TODO: Add a way to show more calling points
+#define MAX_CALLING_POINT_COUNT 30
+#else
+// All other platforms (basalt, diorite, core devices) should have enough RAM to show more
+#define MAX_CALLING_POINT_COUNT 50
+#endif
+
 static struct CallingPointEntry s_calling_points[MAX_CALLING_POINT_COUNT];
 static uint8_t s_calling_point_count = 0;
 static uint8_t s_available_calling_points = 0;
