@@ -7,10 +7,12 @@ const uint32_t CACHE_COMMAND_DELAY_MS = 500;
 static bool js_ready = false;
 static CommandType cached_command = COMMAND_TYPE_UNKNOWN;
 
-static void (*s_closest_station_callback)(DictionaryIterator *iter) = NULL;
+static void (*s_closest_station_callback)(DictionaryIterator *iter, void *context) = NULL;
 static void (*s_departures_callback)(DictionaryIterator *iter) = NULL;
 static void (*s_service_info_callback)(DictionaryIterator *iter) = NULL;
 static void (*s_calling_point_callback)(DictionaryIterator *iter) = NULL;
+
+static void *s_closest_station_context = NULL;
 
 char *command_type_to_string(CommandType command) {
   switch (command) {
@@ -91,7 +93,7 @@ void inbox_received_callback(DictionaryIterator *iter, void *context) {
   Tuple *objectType = dict_find(iter, MESSAGE_KEY_objectType);
   if (objectType) {
     if (strcmp(objectType->value->cstring, "stationList") == 0 && s_closest_station_callback != NULL) {
-      s_closest_station_callback(iter);
+      s_closest_station_callback(iter, s_closest_station_context);
     } else if (strcmp(objectType->value->cstring, "departureList") == 0 && s_departures_callback != NULL) {
       s_departures_callback(iter);
     } else if (strcmp(objectType->value->cstring, "serviceInfo") == 0 && s_service_info_callback != NULL) {
@@ -119,7 +121,10 @@ void request_service(char *service_id, char *from_crs) {
   send_data_request(COMMAND_TYPE_SERVICE, combined, strlen(combined));
 }
 
-void set_closest_station_callback(void (*callback)(DictionaryIterator *iter)) { s_closest_station_callback = callback; }
+void set_closest_station_callback(void (*callback)(DictionaryIterator *item, void *context), void *context) {
+  s_closest_station_callback = callback;
+  s_closest_station_context = context;
+}
 
 void set_departures_callback(void (*callback)(DictionaryIterator *iter)) { s_departures_callback = callback; }
 

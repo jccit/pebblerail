@@ -7,32 +7,29 @@
 #include "../utils.h"
 #include "departures_screen.h"
 
-#define ICON_TEST_ENABLED 0
-
-static Window *s_window;
-static StatusBarLayer *s_status_bar;
-static Layer *s_spinner_layer;
-static MenuLayer *s_menu_layer;
-
-#if ICON_TEST_ENABLED
-static Layer *s_icon_layer;
-static GDrawCommandImage *s_large_icon;
-static GDrawCommandImage *s_small_icon;
-static GDrawCommandImage *s_tiny_icon;
-#endif
-
 #define STATION_COUNT 5
-static struct Station s_stations[STATION_COUNT];
-static uint8_t s_station_count = 0;
+
+struct StationScreen {
+  Window *window;
+  StatusBarLayer *status_bar;
+  Layer *spinner_layer;
+  MenuLayer *menu_layer;
+  struct Station stations[STATION_COUNT];
+  uint8_t loaded_station_count;
+};
 
 // ------ MENU LAYER CALLBACKS ------
 
 static uint16_t menu_get_num_sections_callback(MenuLayer *menu_layer, void *data) { return 1; }
 
-static uint16_t menu_get_num_rows_callback(MenuLayer *menu_layer, uint16_t section_index, void *data) { return s_station_count; }
+static uint16_t menu_get_num_rows_callback(MenuLayer *menu_layer, uint16_t section_index, void *data) {
+  StationScreen *screen = data;
+  return screen->loaded_station_count;
+}
 
 static void menu_draw_row_callback(GContext *ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data) {
-  menu_cell_basic_draw(ctx, cell_layer, s_stations[cell_index->row].name, s_stations[cell_index->row].distance, NULL);
+  StationScreen *screen = data;
+  menu_cell_basic_draw(ctx, cell_layer, screen->stations[cell_index->row].name, screen->stations[cell_index->row].distance, NULL);
 }
 
 static void menu_draw_header_callback(GContext *ctx, const Layer *cell_layer, uint16_t section_index, void *data) {
@@ -42,24 +39,27 @@ static void menu_draw_header_callback(GContext *ctx, const Layer *cell_layer, ui
 static int16_t menu_get_header_height_callback(MenuLayer *menu_layer, uint16_t section_index, void *data) { return 20; }
 
 static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Showing departures for %s", s_stations[cell_index->row].crs);
-  departures_screen_init(s_stations[cell_index->row].crs, s_stations[cell_index->row].name);
+  StationScreen *screen = data;
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Showing departures for %s", screen->stations[cell_index->row].crs);
+  departures_screen_init(screen->stations[cell_index->row].crs, screen->stations[cell_index->row].name);
 }
 
 // ------ END MENU LAYER CALLBACKS ------
 
-static void station_load_complete() {
+static void station_load_complete(StationScreen *screen) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Received all %d stations", STATION_COUNT);
 
-  menu_layer_reload_data(s_menu_layer);
-  layer_set_hidden(menu_layer_get_layer(s_menu_layer), false);
-  layer_mark_dirty(menu_layer_get_layer(s_menu_layer));
+  menu_layer_reload_data(screen->menu_layer);
+  layer_set_hidden(menu_layer_get_layer(screen->menu_layer), false);
+  layer_mark_dirty(menu_layer_get_layer(screen->menu_layer));
 
-  spinner_layer_deinit(s_spinner_layer);
+  spinner_layer_deinit(screen->spinner_layer);
 }
 
-static void closest_station_callback(DictionaryIterator *iter) {
-  layer_set_hidden(menu_layer_get_layer(s_menu_layer), true);
+static void closest_station_callback(DictionaryIterator *iter, void *context) {
+  StationScreen *screen = context;
+
+  layer_set_hidden(menu_layer_get_layer(screen->menu_layer), true);
 
   Tuple *location_tuple = dict_find(iter, MESSAGE_KEY_locationName);
   if (!location_tuple) {
@@ -85,58 +85,46 @@ static void closest_station_callback(DictionaryIterator *iter) {
 
   char *distance = distance_tuple->value->cstring;
 
-  strncpy(s_stations[s_station_count].name, location_name, sizeof(s_stations[s_station_count].name) - 1);
-  s_stations[s_station_count].name[sizeof(s_stations[s_station_count].name) - 1] = '\0';
+  Station *stations = screen->stations;
 
-  strncpy(s_stations[s_station_count].crs, crs, sizeof(s_stations[s_station_count].crs) - 1);
-  s_stations[s_station_count].crs[sizeof(s_stations[s_station_count].crs) - 1] = '\0';
+  strncpy(stations[screen->loaded_station_count].name, location_name, sizeof(stations[screen->loaded_station_count].name) - 1);
+  stations[screen->loaded_station_count].name[sizeof(stations[screen->loaded_station_count].name) - 1] = '\0';
 
-  strncpy(s_stations[s_station_count].distance, distance, sizeof(s_stations[s_station_count].distance) - 1);
-  s_stations[s_station_count].distance[sizeof(s_stations[s_station_count].distance) - 1] = '\0';
+  strncpy(stations[screen->loaded_station_count].crs, crs, sizeof(stations[screen->loaded_station_count].crs) - 1);
+  stations[screen->loaded_station_count].crs[sizeof(stations[screen->loaded_station_count].crs) - 1] = '\0';
 
-  s_station_count++;
+  strncpy(stations[screen->loaded_station_count].distance, distance, sizeof(stations[screen->loaded_station_count].distance) - 1);
+  stations[screen->loaded_station_count].distance[sizeof(stations[screen->loaded_station_count].distance) - 1] = '\0';
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Received station %d: %s, %s", s_station_count, s_stations[s_station_count - 1].name,
-          s_stations[s_station_count - 1].distance);
+  screen->loaded_station_count++;
 
-  if (s_station_count == STATION_COUNT) {
-    station_load_complete();
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Received station %d: %s, %s", screen->loaded_station_count, stations[screen->loaded_station_count - 1].name,
+          stations[screen->loaded_station_count - 1].distance);
+
+  if (screen->loaded_station_count == STATION_COUNT) {
+    station_load_complete(screen);
   }
 }
 
-void load_stations() {
-  s_station_count = 0;
+void prv_load_stations(StationScreen *screen) {
+  screen->loaded_station_count = 0;
 
-  set_closest_station_callback(closest_station_callback);
+  set_closest_station_callback(closest_station_callback, (void *)screen);
   request_closest_stations();
 }
 
-#if ICON_TEST_ENABLED
-static void icon_layer_update_proc(Layer *layer, GContext *ctx) {
-  gdraw_command_image_draw(ctx, s_tiny_icon, GPoint(30, 20));
-  gdraw_command_image_draw(ctx, s_small_icon, GPoint(30, 40));
-  gdraw_command_image_draw(ctx, s_large_icon, GPoint(30, 80));
-}
-
-void test_icons() {
-  s_tiny_icon = gdraw_command_image_create_with_resource(RESOURCE_ID_TRAIN_TINY);
-  s_small_icon = gdraw_command_image_create_with_resource(RESOURCE_ID_TRAIN_SMALL);
-  s_large_icon = gdraw_command_image_create_with_resource(RESOURCE_ID_TRAIN_LARGE);
-
-  s_icon_layer = layer_create(GRect(0, 0, PBL_DISPLAY_WIDTH, PBL_DISPLAY_HEIGHT));
-  layer_set_update_proc(s_icon_layer, icon_layer_update_proc);
-  layer_add_child(window_get_root_layer(s_window), s_icon_layer);
-}
-#endif
-void station_window_load(Window *window) {
-  s_status_bar = custom_status_bar_layer_create();
+void station_window_appear(Window *window) {
+  StationScreen *screen = window_get_user_data(window);
 
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
   GRect bounds_status_bar = bounds_with_status_bar(window);
-  s_menu_layer = menu_layer_create(bounds_status_bar);
 
-  menu_layer_set_callbacks(s_menu_layer, NULL,
+  screen->status_bar = custom_status_bar_layer_create();
+  screen->menu_layer = menu_layer_create(bounds_status_bar);
+  screen->spinner_layer = spinner_layer_init(bounds);
+
+  menu_layer_set_callbacks(screen->menu_layer, screen,
                            (MenuLayerCallbacks){
                                .get_num_sections = menu_get_num_sections_callback,
                                .get_num_rows = menu_get_num_rows_callback,
@@ -146,14 +134,12 @@ void station_window_load(Window *window) {
                                .select_click = menu_select_click_callback,
                            });
 
-  menu_layer_set_click_config_onto_window(s_menu_layer, window);
-  layer_set_hidden(menu_layer_get_layer(s_menu_layer), true);
+  menu_layer_set_click_config_onto_window(screen->menu_layer, window);
+  layer_set_hidden(menu_layer_get_layer(screen->menu_layer), true);
 
-  s_spinner_layer = spinner_layer_init(bounds);
-
-  layer_add_child(window_layer, menu_layer_get_layer(s_menu_layer));
-  layer_add_child(window_layer, s_spinner_layer);
-  layer_add_child(window_layer, status_bar_layer_get_layer(s_status_bar));
+  layer_add_child(window_layer, menu_layer_get_layer(screen->menu_layer));
+  layer_add_child(window_layer, screen->spinner_layer);
+  layer_add_child(window_layer, status_bar_layer_get_layer(screen->status_bar));
 
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Station screen initialized");
 
@@ -162,22 +148,33 @@ void station_window_load(Window *window) {
 #endif
 }
 
-void station_window_unload(Window *window) { station_screen_deinit(); }
+void station_window_disappear(Window *window) {
+  StationScreen *screen = window_get_user_data(window);
 
-void station_screen_init() {
-  s_window = window_create();
-  window_set_window_handlers(s_window, (WindowHandlers){
-                                           .load = station_window_load,
-                                           .unload = station_window_unload,
-                                       });
-  const bool animated = true;
-  window_stack_push(s_window, animated);
-
-  load_stations();
+  custom_status_bar_layer_destroy(screen->status_bar);
+  menu_layer_destroy(screen->menu_layer);
+  spinner_layer_deinit(screen->spinner_layer);
 }
 
-void station_screen_deinit() {
-  custom_status_bar_layer_destroy(s_status_bar);
-  menu_layer_destroy(s_menu_layer);
-  window_destroy(s_window);
+StationScreen *station_screen_create() {
+  StationScreen *screen = malloc(sizeof(StationScreen));
+  screen->window = window_create();
+
+  window_set_window_handlers(screen->window, (WindowHandlers){
+                                                 .appear = station_window_appear,
+                                                 .disappear = station_window_disappear,
+                                             });
+
+  window_set_user_data(screen->window, screen);
+
+  prv_load_stations(screen);
+
+  return screen;
 }
+
+void station_screen_destroy(StationScreen *screen) {
+  window_destroy(screen->window);
+  free(screen);
+}
+
+void station_screen_push(StationScreen *screen) { window_stack_push(screen->window, true); }
