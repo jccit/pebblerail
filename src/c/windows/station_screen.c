@@ -7,14 +7,14 @@
 #include "../utils.h"
 #include "departures_screen.h"
 
-#define STATION_COUNT 5
+#define MAX_STATION_COUNT 5
 
 struct StationScreen {
   Window *window;
   StatusBarLayer *status_bar;
   Layer *spinner_layer;
   MenuLayer *menu_layer;
-  struct Station stations[STATION_COUNT];
+  Station *stations;
   uint8_t loaded_station_count;
 
   DeparturesScreen *departures_screen;
@@ -56,7 +56,7 @@ static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_in
 // ------ END MENU LAYER CALLBACKS ------
 
 static void station_load_complete(StationScreen *screen) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Received all %d stations", STATION_COUNT);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Received all %d stations", MAX_STATION_COUNT);
 
   menu_layer_reload_data(screen->menu_layer);
   layer_set_hidden(menu_layer_get_layer(screen->menu_layer), false);
@@ -110,13 +110,17 @@ static void closest_station_callback(DictionaryIterator *iter, void *context) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Received station %d: %s, %s", screen->loaded_station_count, stations[screen->loaded_station_count - 1].name,
           stations[screen->loaded_station_count - 1].distance);
 
-  if (screen->loaded_station_count == STATION_COUNT) {
+  if (screen->loaded_station_count == MAX_STATION_COUNT) {
     station_load_complete(screen);
   }
 }
 
 void prv_load_stations(StationScreen *screen) {
   screen->loaded_station_count = 0;
+  if (screen->stations != NULL) {
+    free(screen->stations);
+  }
+  screen->stations = malloc(sizeof(Station) * MAX_STATION_COUNT);
 
   set_closest_station_callback(closest_station_callback, (void *)screen);
   request_closest_stations();
@@ -172,11 +176,25 @@ void station_window_disappear(Window *window) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Station screen disappear complete");
 }
 
+void station_screen_destroy(StationScreen *screen) {
+  window_destroy(screen->window);
+  free(screen->stations);
+  free(screen);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Station screen destroyed");
+}
+
+void station_window_unload(Window *window) {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Station screen unload");
+  StationScreen *screen = window_get_user_data(window);
+  station_screen_destroy(screen);
+}
+
 StationScreen *station_screen_create() {
   StationScreen *screen = malloc(sizeof(StationScreen));
   screen->window = window_create();
 
   window_set_window_handlers(screen->window, (WindowHandlers){
+                                                 .unload = station_window_unload,
                                                  .appear = station_window_appear,
                                                  .disappear = station_window_disappear,
                                              });
@@ -188,11 +206,6 @@ StationScreen *station_screen_create() {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Station screen created");
 
   return screen;
-}
-
-void station_screen_destroy(StationScreen *screen) {
-  window_destroy(screen->window);
-  free(screen);
 }
 
 void station_screen_push(StationScreen *screen) {

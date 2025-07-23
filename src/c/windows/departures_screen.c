@@ -223,8 +223,24 @@ void departures_window_disappear(Window *window) {
   custom_status_bar_layer_destroy(screen->status_bar);
   menu_layer_destroy(screen->menu_layer);
   spinner_layer_deinit(screen->spinner_layer);
+  text_layer_destroy(screen->error_layer);
+
+  free(screen->action_menu);
+  free(screen->root_level);
 
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Departures screen disappear complete");
+}
+
+void departures_screen_destroy(DeparturesScreen *screen) {
+  window_destroy(screen->window);
+  free(screen);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Departures screen destroyed");
+}
+
+void departures_window_unload(Window *window) {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Departures screen unload");
+  DeparturesScreen *screen = window_get_user_data(window);
+  departures_screen_destroy(screen);
 }
 
 DeparturesScreen *departures_screen_create(char *crs, char *station_name) {
@@ -237,6 +253,7 @@ DeparturesScreen *departures_screen_create(char *crs, char *station_name) {
   window_set_window_handlers(screen->window, (WindowHandlers){
                                                  .appear = departures_window_appear,
                                                  .disappear = departures_window_disappear,
+                                                 .unload = departures_window_unload,
                                              });
 
   window_set_user_data(screen->window, screen);
@@ -251,9 +268,4 @@ DeparturesScreen *departures_screen_create(char *crs, char *station_name) {
 void departures_screen_push(DeparturesScreen *screen) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Departures screen pushed");
   window_stack_push(screen->window, true);
-}
-
-void departures_screen_destroy(DeparturesScreen *screen) {
-  window_destroy(screen->window);
-  free(screen);
 }
