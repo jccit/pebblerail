@@ -7,71 +7,85 @@
 #include "../utils.h"
 #include "service_screen.h"
 
-static Window *s_window;
-static StatusBarLayer *s_status_bar;
-static MenuLayer *s_menu_layer;
-static Layer *s_spinner_layer;
-static TextLayer *s_error_layer;
-static char *s_crs;
-static char *s_stationName;
-
 #define ACTION_MENU_NUM_ITEMS 2
-static ActionMenu *s_action_menu;
-static ActionMenuLevel *s_root_level;
-static uint8_t s_selected_departure_index = 0;
-
 #define MAX_DEPARTURE_COUNT 10
-static struct DepartureEntry s_departures[MAX_DEPARTURE_COUNT];
-static uint8_t s_departure_count = 0;
-static uint8_t s_available_departures = 0;
 
 typedef enum { MENU_ACTION_VIEW_STOPS = 1, MENU_ACTION_PIN = 2 } DepartureMenuAction;
 
+struct DeparturesScreen {
+  Window *window;
+  StatusBarLayer *status_bar;
+  MenuLayer *menu_layer;
+  Layer *spinner_layer;
+  TextLayer *error_layer;
+
+  char *crs;
+  char *station_name;
+
+  ActionMenu *action_menu;
+  ActionMenuLevel *root_level;
+  uint8_t selected_departure_index;
+
+  struct DepartureEntry departures[MAX_DEPARTURE_COUNT];
+  uint8_t departure_count;
+  uint8_t available_departures;
+};
+
 static void action_performed_callback(ActionMenu *action_menu, const ActionMenuItem *action, void *context) {
+  DeparturesScreen *screen = context;
+
   DepartureMenuAction selected_action = (DepartureMenuAction)action_menu_item_get_action_data(action);
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Selected action: %d", selected_action);
 
   if (selected_action == MENU_ACTION_VIEW_STOPS) {
-    service_screen_init(s_departures[s_selected_departure_index].serviceID, s_crs);
+    service_screen_init(screen->departures[screen->selected_departure_index].serviceID, screen->crs);
   } else if (selected_action == MENU_ACTION_PIN) {
-    pin_calling_point(s_departures[s_selected_departure_index].serviceID, s_crs, false);
+    pin_calling_point(screen->departures[screen->selected_departure_index].serviceID, screen->crs, false);
   }
 }
 
 // ------ MENU LAYER CALLBACKS ------
 
-static uint16_t menu_get_num_sections_callback(MenuLayer *menu_layer, void *data) { return 1; }
+static uint16_t menu_get_num_sections_callback(MenuLayer *menu_layer, void *context) { return 1; }
 
-static uint16_t menu_get_num_rows_callback(MenuLayer *menu_layer, uint16_t section_index, void *data) { return s_departure_count; }
+static uint16_t menu_get_num_rows_callback(MenuLayer *menu_layer, uint16_t section_index, void *context) {
+  DeparturesScreen *screen = context;
+  return screen->departure_count;
+}
 
-static void menu_draw_row_callback(GContext *ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data) {
+static void menu_draw_row_callback(GContext *ctx, const Layer *cell_layer, MenuIndex *cell_index, void *context) {
+  DeparturesScreen *screen = context;
+
   char combined_text[32];
   int index = cell_index->row;
-  char *platform_display = s_departures[index].platform;
+  char *platform_display = screen->departures[index].platform;
 
   if (strcmp(platform_display, "un") == 0) {
     platform_display = "?";
   }
 
-  snprintf(combined_text, sizeof(combined_text), "Dep %s - Pl.%s", s_departures[index].departureTime, platform_display);
+  snprintf(combined_text, sizeof(combined_text), "Dep %s - Pl.%s", screen->departures[index].departureTime, platform_display);
 
-  menu_cell_basic_draw(ctx, cell_layer, s_departures[index].destination, combined_text, NULL);
+  menu_cell_basic_draw(ctx, cell_layer, screen->departures[index].destination, combined_text, NULL);
 }
 
-static void menu_draw_header_callback(GContext *ctx, const Layer *cell_layer, uint16_t section_index, void *data) {
-  menu_section_header_draw(ctx, cell_layer, s_stationName);
+static void menu_draw_header_callback(GContext *ctx, const Layer *cell_layer, uint16_t section_index, void *context) {
+  DeparturesScreen *screen = context;
+  menu_section_header_draw(ctx, cell_layer, screen->station_name);
 }
 
-static int16_t menu_get_header_height_callback(MenuLayer *menu_layer, uint16_t section_index, void *data) { return 20; }
+static int16_t menu_get_header_height_callback(MenuLayer *menu_layer, uint16_t section_index, void *context) { return 20; }
 
-static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data) {
+static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *context) {
+  DeparturesScreen *screen = context;
+
   // If the menu is hidden, don't allow clicks
-  if (layer_get_hidden(menu_layer_get_layer(s_menu_layer))) {
+  if (layer_get_hidden(menu_layer_get_layer(screen->menu_layer))) {
     return;
   }
 
   // Configure the ActionMenu Window about to be shown
-  ActionMenuConfig config = (ActionMenuConfig){.root_level = s_root_level,
+  ActionMenuConfig config = (ActionMenuConfig){.root_level = screen->root_level,
                                                .colors =
                                                    {
                                                        .background = GColorWhite,
@@ -80,32 +94,34 @@ static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_in
                                                .align = ActionMenuAlignCenter};
 
   // Show the ActionMenu
-  s_selected_departure_index = cell_index->row;
-  s_action_menu = action_menu_open(&config);
+  screen->selected_departure_index = cell_index->row;
+  screen->action_menu = action_menu_open(&config);
 }
 
 // ------ END MENU LAYER CALLBACKS ------
 
-static void departures_load_complete() {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Received all %d departures", s_available_departures);
+static void departures_load_complete(DeparturesScreen *screen) {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Received all %d departures", screen->available_departures);
 
-  menu_layer_reload_data(s_menu_layer);
-  layer_set_hidden(menu_layer_get_layer(s_menu_layer), false);
-  layer_mark_dirty(menu_layer_get_layer(s_menu_layer));
+  menu_layer_reload_data(screen->menu_layer);
+  layer_set_hidden(menu_layer_get_layer(screen->menu_layer), false);
+  layer_mark_dirty(menu_layer_get_layer(screen->menu_layer));
 
-  spinner_layer_deinit(s_spinner_layer);
+  layer_set_hidden(screen->spinner_layer, true);
 }
 
-static void no_departures() {
-  departures_load_complete();
-  layer_set_hidden(menu_layer_get_layer(s_menu_layer), true);
+static void no_departures(DeparturesScreen *screen) {
+  departures_load_complete(screen);
+  layer_set_hidden(menu_layer_get_layer(screen->menu_layer), true);
 
-  s_error_layer = create_error_layer(s_window, "No departures found");
-  layer_add_child(window_get_root_layer(s_window), text_layer_get_layer(s_error_layer));
+  screen->error_layer = create_error_layer(screen->window, "No departures found");
+  layer_add_child(window_get_root_layer(screen->window), text_layer_get_layer(screen->error_layer));
 }
 
-static void departures_callback(DictionaryIterator *iter) {
-  layer_set_hidden(menu_layer_get_layer(s_menu_layer), true);
+static void departures_callback(DictionaryIterator *iter, void *context) {
+  DeparturesScreen *screen = context;
+
+  layer_set_hidden(menu_layer_get_layer(screen->menu_layer), true);
 
   Tuple *count_tuple = dict_find(iter, MESSAGE_KEY_count);
   if (!count_tuple) {
@@ -114,13 +130,13 @@ static void departures_callback(DictionaryIterator *iter) {
   }
   uint8_t count = count_tuple->value->uint8;
 
-  s_available_departures = count > MAX_DEPARTURE_COUNT ? MAX_DEPARTURE_COUNT : count;
+  screen->available_departures = count > MAX_DEPARTURE_COUNT ? MAX_DEPARTURE_COUNT : count;
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Set available departures to %d", s_available_departures);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Set available departures to %d", screen->available_departures);
 
-  if (s_available_departures == 0) {
+  if (screen->available_departures == 0) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "No departures received");
-    no_departures();
+    no_departures(screen);
     return;
   }
 
@@ -130,41 +146,52 @@ static void departures_callback(DictionaryIterator *iter) {
   EXTRACT_TUPLE(iter, platform, platform);
   EXTRACT_TUPLE(iter, operatorCode, operatorCode);
 
-  COPY_STRING(s_departures[s_departure_count].destination, locationName);
-  COPY_STRING(s_departures[s_departure_count].departureTime, time);
-  COPY_STRING(s_departures[s_departure_count].platform, platform);
-  COPY_STRING(s_departures[s_departure_count].serviceID, serviceID);
-  COPY_STRING(s_departures[s_departure_count].operatorCode, operatorCode);
+  COPY_STRING(screen->departures[screen->departure_count].destination, locationName);
+  COPY_STRING(screen->departures[screen->departure_count].departureTime, time);
+  COPY_STRING(screen->departures[screen->departure_count].platform, platform);
+  COPY_STRING(screen->departures[screen->departure_count].serviceID, serviceID);
+  COPY_STRING(screen->departures[screen->departure_count].operatorCode, operatorCode);
 
-  to_local_time(time, s_departures[s_departure_count].departureTime);
+  to_local_time(time, screen->departures[screen->departure_count].departureTime);
 
-  s_departure_count++;
+  screen->departure_count++;
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Received departure %d: %s, %s, %s, %s", s_departure_count, s_departures[s_departure_count - 1].serviceID,
-          s_departures[s_departure_count - 1].destination, s_departures[s_departure_count - 1].departureTime,
-          s_departures[s_departure_count - 1].platform);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Received departure %d: %s, %s, %s, %s", screen->departure_count,
+          screen->departures[screen->departure_count - 1].serviceID, screen->departures[screen->departure_count - 1].destination,
+          screen->departures[screen->departure_count - 1].departureTime, screen->departures[screen->departure_count - 1].platform);
 
-  if (s_departure_count == s_available_departures) {
-    departures_load_complete();
+  if (screen->departure_count == screen->available_departures) {
+    departures_load_complete(screen);
   }
 }
 
-void load_departures() {
-  s_departure_count = 0;
+void prv_load_departures(DeparturesScreen *screen) {
+  screen->departure_count = 0;
 
-  set_departures_callback(departures_callback);
-  request_departures(s_crs);
+  set_departures_callback(departures_callback, (void *)screen);
+  request_departures(screen->crs);
 }
 
-void departures_window_load(Window *window) {
-  s_status_bar = custom_status_bar_layer_create();
+void prv_init_action_menu(DeparturesScreen *screen) {
+  screen->root_level = action_menu_level_create(ACTION_MENU_NUM_ITEMS);
+
+  action_menu_level_add_action(screen->root_level, "View stops", action_performed_callback, (void *)MENU_ACTION_VIEW_STOPS);
+  action_menu_level_add_action(screen->root_level, "Pin to timeline", action_performed_callback, (void *)MENU_ACTION_PIN);
+}
+
+void departures_window_appear(Window *window) {
+  DeparturesScreen *screen = window_get_user_data(window);
+
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Departures window appear");
+
+  screen->status_bar = custom_status_bar_layer_create();
 
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
   GRect bounds_status_bar = bounds_with_status_bar(window);
-  s_menu_layer = menu_layer_create(bounds_status_bar);
+  screen->menu_layer = menu_layer_create(bounds_status_bar);
 
-  menu_layer_set_callbacks(s_menu_layer, NULL,
+  menu_layer_set_callbacks(screen->menu_layer, screen,
                            (MenuLayerCallbacks){
                                .get_num_sections = menu_get_num_sections_callback,
                                .get_num_rows = menu_get_num_rows_callback,
@@ -174,43 +201,59 @@ void departures_window_load(Window *window) {
                                .select_click = menu_select_click_callback,
                            });
 
-  menu_layer_set_click_config_onto_window(s_menu_layer, window);
-  layer_set_hidden(menu_layer_get_layer(s_menu_layer), true);
+  menu_layer_set_click_config_onto_window(screen->menu_layer, window);
+  layer_set_hidden(menu_layer_get_layer(screen->menu_layer), true);
 
-  s_spinner_layer = spinner_layer_init(bounds);
+  screen->spinner_layer = spinner_layer_init(bounds);
 
-  layer_add_child(window_layer, menu_layer_get_layer(s_menu_layer));
-  layer_add_child(window_layer, s_spinner_layer);
-  layer_add_child(window_layer, status_bar_layer_get_layer(s_status_bar));
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Station screen initialized");
+  prv_init_action_menu(screen);
+
+  layer_add_child(window_layer, menu_layer_get_layer(screen->menu_layer));
+  layer_add_child(window_layer, screen->spinner_layer);
+  layer_add_child(window_layer, status_bar_layer_get_layer(screen->status_bar));
+
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Departures window appear complete");
 }
 
-static void init_action_menu() {
-  s_root_level = action_menu_level_create(ACTION_MENU_NUM_ITEMS);
+void departures_window_disappear(Window *window) {
+  DeparturesScreen *screen = window_get_user_data(window);
 
-  action_menu_level_add_action(s_root_level, "View stops", action_performed_callback, (void *)MENU_ACTION_VIEW_STOPS);
-  action_menu_level_add_action(s_root_level, "Pin to timeline", action_performed_callback, (void *)MENU_ACTION_PIN);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Departures screen disappear");
+
+  custom_status_bar_layer_destroy(screen->status_bar);
+  menu_layer_destroy(screen->menu_layer);
+  spinner_layer_deinit(screen->spinner_layer);
+
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Departures screen disappear complete");
 }
 
-void departures_window_unload(Window *window) { departures_screen_deinit(); }
+DeparturesScreen *departures_screen_create(char *crs, char *station_name) {
+  DeparturesScreen *screen = malloc(sizeof(DeparturesScreen));
 
-void departures_screen_init(char *crs, char *stationName) {
-  s_crs = crs;
-  s_stationName = stationName;
-  s_window = window_create();
-  window_set_window_handlers(s_window, (WindowHandlers){
-                                           .load = departures_window_load,
-                                           .unload = departures_window_unload,
-                                       });
-  const bool animated = true;
-  window_stack_push(s_window, animated);
+  screen->crs = crs;
+  screen->station_name = station_name;
+  screen->window = window_create();
 
-  load_departures();
-  init_action_menu();
+  window_set_window_handlers(screen->window, (WindowHandlers){
+                                                 .appear = departures_window_appear,
+                                                 .disappear = departures_window_disappear,
+                                             });
+
+  window_set_user_data(screen->window, screen);
+
+  prv_load_departures(screen);
+
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Departures screen created");
+
+  return screen;
 }
 
-void departures_screen_deinit() {
-  custom_status_bar_layer_destroy(s_status_bar);
-  menu_layer_destroy(s_menu_layer);
-  window_destroy(s_window);
+void departures_screen_push(DeparturesScreen *screen) {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Departures screen pushed");
+  window_stack_push(screen->window, true);
+}
+
+void departures_screen_destroy(DeparturesScreen *screen) {
+  window_destroy(screen->window);
+  free(screen);
 }

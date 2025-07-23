@@ -66,6 +66,7 @@ SpinnerLayer *spinner_layer_init(GRect bounds) {
   spinner_data->angle = 0;
   spinner_data->center = center;
   spinner_data->bounds = GRect(center.x - spinner_radius, center.y - spinner_radius, spinner_radius * 2, spinner_radius * 2);
+  spinner_data->timer = NULL;
 
   // Setup timer for the animation
   app_timer_register(spinner_interval_ms, spinner_timer_callback, spinner_layer);
@@ -74,7 +75,15 @@ SpinnerLayer *spinner_layer_init(GRect bounds) {
 }
 
 void spinner_layer_deinit(Layer *spinner_layer) {
+  if (spinner_layer == NULL) {
+    APP_LOG(APP_LOG_LEVEL_WARNING, "Tried to deinit NULL spinner layer");
+    return;
+  }
+
   SpinnerData *spinner_data = (SpinnerData *)layer_get_data(spinner_layer);
-  app_timer_cancel(spinner_data->timer);
+  if (spinner_data != NULL && spinner_data->timer != NULL) {
+    app_timer_cancel(spinner_data->timer);
+  }
+
   layer_destroy(spinner_layer);
 }

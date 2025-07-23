@@ -74,7 +74,7 @@ void data_init();
 void set_closest_station_callback(void (*callback)(DictionaryIterator *item, void *context), void *context);
 void request_closest_stations();
 
-void set_departures_callback(void (*callback)(DictionaryIterator *iter));
+void set_departures_callback(void (*callback)(DictionaryIterator *iter, void *context), void *context);
 void request_departures(char *crs);
 
 void set_service_info_callback(void (*callback)(DictionaryIterator *iter));

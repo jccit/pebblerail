@@ -59,7 +59,8 @@ static void action_performed_callback(ActionMenu *action_menu, const ActionMenuI
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Selected action: %d", selected_action);
 
   if (selected_action == MENU_ACTION_VIEW_DEPARTURES) {
-    departures_screen_init(s_calling_points[s_selected_calling_point_index].crs, s_calling_points[s_selected_calling_point_index].destination);
+    // TODO: Update
+    // departures_screen_init(s_calling_points[s_selected_calling_point_index].crs, s_calling_points[s_selected_calling_point_index].destination);
   } else if (selected_action == MENU_ACTION_PIN) {
     pin_calling_point(s_service_info.serviceID, s_calling_points[s_selected_calling_point_index].crs, true);
   }

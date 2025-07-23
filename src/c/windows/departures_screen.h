@@ -2,5 +2,8 @@
 
 #include <pebble.h>
 
-void departures_screen_init(char *crs, char *stationName);
-void departures_screen_deinit();
+typedef struct DeparturesScreen DeparturesScreen;
+
+DeparturesScreen *departures_screen_create(char *crs, char *stationName);
+void departures_screen_destroy(DeparturesScreen *screen);
+void departures_screen_push(DeparturesScreen *screen);
