@@ -16,8 +16,6 @@ struct StationScreen {
   MenuLayer *menu_layer;
   Station *stations;
   uint8_t loaded_station_count;
-
-  DeparturesScreen *departures_screen;
 };
 
 // ------ MENU LAYER CALLBACKS ------
@@ -49,8 +47,8 @@ static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_in
 
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Showing departures for %s", screen->stations[cell_index->row].crs);
 
-  screen->departures_screen = departures_screen_create(screen->stations[cell_index->row].crs, screen->stations[cell_index->row].name);
-  departures_screen_push(screen->departures_screen);
+  DeparturesScreen *departures_screen = departures_screen_create(screen->stations[cell_index->row].crs, screen->stations[cell_index->row].name);
+  departures_screen_push(departures_screen);
 }
 
 // ------ END MENU LAYER CALLBACKS ------

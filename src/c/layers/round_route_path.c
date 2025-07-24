@@ -200,3 +200,10 @@ bool round_route_previous_calling_point(Layer *layer) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Selected calling point: %d", data->selected);
   return false;
 }
+
+void round_route_path_deinit(Layer *layer) {
+  RoundRoutePathData *data = (RoundRoutePathData *)layer_get_data(layer);
+  text_layer_destroy(data->destination_layer);
+  text_layer_destroy(data->time_layer);
+  layer_destroy(layer);
+}

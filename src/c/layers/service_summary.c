@@ -142,8 +142,10 @@ ServiceSummaryLayer *service_summary_init(GRect bounds) {
 }
 
 void service_summary_deinit(ServiceSummaryLayer *layer) {
-  layer_destroy(layer);
   gdraw_command_image_destroy(s_train_icon);
+  gbitmap_destroy(s_down_icon_black);
+  gbitmap_destroy(s_down_icon_white);
+  layer_destroy(layer);
 }
 
 void service_summary_set_data(ServiceSummaryLayer *layer, char *origin, char *destination, char *operator_code, char *time, char *reason,

@@ -105,6 +105,11 @@ static void menu_draw_header_callback(GContext *ctx, const Layer *cell_layer, ui
 
 static int16_t menu_get_header_height_callback(MenuLayer *menu_layer, uint16_t section_index, void *data) { return 20; }
 
+static void service_action_menu_close_callback(ActionMenu *menu, const ActionMenuItem *performed_action, void *context) {
+  ServiceScreen *screen = context;
+  screen->action_menu = NULL;
+}
+
 static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data) {
   ServiceScreen *screen = data;
 
@@ -121,6 +126,7 @@ static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_in
                                                        .foreground = GColorBlack,
                                                    },
                                                .align = ActionMenuAlignCenter,
+                                               .did_close = service_action_menu_close_callback,
                                                .context = screen};
 
   // Show the ActionMenu
@@ -548,7 +554,7 @@ void service_window_load(Window *window) {
 
   layer_add_child(window_layer, screen->spinner_layer);
 
-  screen->service_summary_layer = service_summary_init(bounds);
+  screen->service_summary_layer = service_summary_init(bounds_with_status_bar_no_padding(screen->window));
   layer_add_child(window_layer, screen->service_summary_layer);
   layer_set_hidden(screen->service_summary_layer, true);
 
@@ -563,14 +569,31 @@ void service_window_unload(Window *window) {
   ServiceScreen *screen = window_get_user_data(window);
   custom_status_bar_layer_destroy(screen->status_bar);
 
+  if (screen->spinner_layer != NULL) {
+    spinner_layer_deinit(screen->spinner_layer);
+  }
+
+  if (screen->service_summary_layer != NULL) {
+    service_summary_deinit(screen->service_summary_layer);
+  }
+
+  if (screen->error_layer != NULL) {
+    text_layer_destroy(screen->error_layer);
+  }
+
 #ifdef PBL_ROUND
-  layer_destroy(screen->route_path_layer);
+  round_route_path_deinit(screen->route_path_layer);
 #else
   menu_layer_destroy(screen->menu_layer);
 #endif
 
-  // free(screen->action_menu);
-  // free(screen->root_level);
+  if (screen->action_menu != NULL) {
+    free(screen->action_menu);
+  }
+
+  if (screen->root_level != NULL) {
+    free(screen->root_level);
+  }
 
   service_screen_destroy(screen);
 }
@@ -585,6 +608,14 @@ ServiceScreen *service_screen_create(char *service_id, char *origin) {
           screen->service_info.origin);
 
   screen->window = window_create();
+
+  screen->status_bar = NULL;
+  screen->spinner_layer = NULL;
+  screen->error_layer = NULL;
+  screen->service_summary_layer = NULL;
+  screen->action_menu = NULL;
+  screen->root_level = NULL;
+
   window_set_window_handlers(screen->window, (WindowHandlers){
                                                  .load = service_window_load,
                                                  .unload = service_window_unload,

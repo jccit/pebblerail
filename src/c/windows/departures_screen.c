@@ -76,6 +76,11 @@ static void menu_draw_header_callback(GContext *ctx, const Layer *cell_layer, ui
 
 static int16_t menu_get_header_height_callback(MenuLayer *menu_layer, uint16_t section_index, void *context) { return 20; }
 
+static void action_menu_close_callback(ActionMenu *menu, const ActionMenuItem *performed_action, void *context) {
+  DeparturesScreen *screen = context;
+  screen->action_menu = NULL;
+}
+
 static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *context) {
   DeparturesScreen *screen = context;
 
@@ -92,6 +97,7 @@ static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_in
                                                        .foreground = GColorBlack,
                                                    },
                                                .align = ActionMenuAlignCenter,
+                                               .did_close = action_menu_close_callback,
                                                .context = screen};
 
   // Show the ActionMenu
@@ -216,11 +222,25 @@ void departures_window_load(Window *window) {
 
 void departures_screen_destroy(DeparturesScreen *screen) {
   custom_status_bar_layer_destroy(screen->status_bar);
-  menu_layer_destroy(screen->menu_layer);
-  spinner_layer_deinit(screen->spinner_layer);
+
+  if (screen->menu_layer != NULL) {
+    menu_layer_destroy(screen->menu_layer);
+  }
+
+  if (screen->spinner_layer != NULL) {
+    spinner_layer_deinit(screen->spinner_layer);
+  }
 
   if (screen->error_layer != NULL) {
     text_layer_destroy(screen->error_layer);
+  }
+
+  if (screen->action_menu != NULL) {
+    free(screen->action_menu);
+  }
+
+  if (screen->root_level != NULL) {
+    free(screen->root_level);
   }
 
   window_destroy(screen->window);
@@ -239,7 +259,14 @@ DeparturesScreen *departures_screen_create(char *crs, char *station_name) {
 
   screen->crs = crs;
   screen->station_name = station_name;
+
+  screen->status_bar = NULL;
+  screen->menu_layer = NULL;
+  screen->spinner_layer = NULL;
   screen->error_layer = NULL;
+  screen->action_menu = NULL;
+  screen->root_level = NULL;
+
   screen->window = window_create();
 
   window_set_window_handlers(screen->window, (WindowHandlers){
