@@ -77,8 +77,8 @@ void request_closest_stations();
 void set_departures_callback(void (*callback)(DictionaryIterator *iter, void *context), void *context);
 void request_departures(char *crs);
 
-void set_service_info_callback(void (*callback)(DictionaryIterator *iter));
-void set_calling_point_callback(void (*callback)(DictionaryIterator *iter));
+void set_service_info_callback(void (*callback)(DictionaryIterator *iter, void *context), void *context);
+void set_calling_point_callback(void (*callback)(DictionaryIterator *iter, void *context), void *context);
 void request_service(char *service_id, char *from_crs);
 
 void pin_calling_point(char *service_id, char *crs, bool isArrival);

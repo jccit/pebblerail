@@ -9,11 +9,13 @@ static CommandType cached_command = COMMAND_TYPE_UNKNOWN;
 
 static void (*s_closest_station_callback)(DictionaryIterator *iter, void *context) = NULL;
 static void (*s_departures_callback)(DictionaryIterator *iter, void *context) = NULL;
-static void (*s_service_info_callback)(DictionaryIterator *iter) = NULL;
-static void (*s_calling_point_callback)(DictionaryIterator *iter) = NULL;
+static void (*s_service_info_callback)(DictionaryIterator *iter, void *context) = NULL;
+static void (*s_calling_point_callback)(DictionaryIterator *iter, void *context) = NULL;
 
 static void *s_closest_station_context = NULL;
 static void *s_departures_context = NULL;
+static void *s_service_info_context = NULL;
+static void *s_calling_point_context = NULL;
 
 char *command_type_to_string(CommandType command) {
   switch (command) {
@@ -98,9 +100,9 @@ void inbox_received_callback(DictionaryIterator *iter, void *context) {
     } else if (strcmp(objectType->value->cstring, "departureList") == 0 && s_departures_callback != NULL) {
       s_departures_callback(iter, s_departures_context);
     } else if (strcmp(objectType->value->cstring, "serviceInfo") == 0 && s_service_info_callback != NULL) {
-      s_service_info_callback(iter);
+      s_service_info_callback(iter, s_service_info_context);
     } else if (strcmp(objectType->value->cstring, "callingPoint") == 0 && s_calling_point_callback != NULL) {
-      s_calling_point_callback(iter);
+      s_calling_point_callback(iter, s_calling_point_context);
     }
   }
 }
@@ -132,9 +134,15 @@ void set_departures_callback(void (*callback)(DictionaryIterator *iter, void *co
   s_departures_context = context;
 }
 
-void set_service_info_callback(void (*callback)(DictionaryIterator *iter)) { s_service_info_callback = callback; }
+void set_service_info_callback(void (*callback)(DictionaryIterator *iter, void *context), void *context) {
+  s_service_info_callback = callback;
+  s_service_info_context = context;
+}
 
-void set_calling_point_callback(void (*callback)(DictionaryIterator *iter)) { s_calling_point_callback = callback; }
+void set_calling_point_callback(void (*callback)(DictionaryIterator *iter, void *context), void *context) {
+  s_calling_point_callback = callback;
+  s_calling_point_context = context;
+}
 
 void pin_calling_point(char *service_id, char *crs, bool isArrival) {
   char combined[256];
