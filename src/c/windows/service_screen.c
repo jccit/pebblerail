@@ -17,7 +17,7 @@
 
 #if defined(PBL_PLATFORM_APLITE)
 // Aplite has limited RAM so restrict the number of calling points
-#define MAX_CALLING_POINT_COUNT 30
+#define MAX_CALLING_POINT_COUNT 20
 #elif defined(PBL_ROUND)
 // Round has limited screen space so can't really show all calling points
 // TODO: Add a way to show more calling points
@@ -36,13 +36,17 @@ struct ServiceScreen {
 
   ActionMenu *action_menu;
   ActionMenuLevel *root_level;
+
   GRect menu_frame_start;
+  PropertyAnimation *menu_prop_anim;
+  Animation *menu_anim;
 
   struct CallingPointEntry calling_points[MAX_CALLING_POINT_COUNT];
   uint8_t selected_calling_point_index;
   uint8_t calling_point_count;
   uint8_t available_calling_points;
   ServiceInfo service_info;
+  bool load_complete;
   bool is_loading;
   bool is_menu_active;
 
@@ -107,7 +111,7 @@ static int16_t menu_get_header_height_callback(MenuLayer *menu_layer, uint16_t s
 
 static void service_action_menu_close_callback(ActionMenu *menu, const ActionMenuItem *performed_action, void *context) {
   ServiceScreen *screen = context;
-  screen->action_menu = NULL;
+  action_menu_hierarchy_destroy(action_menu_get_root_level(screen->action_menu), NULL, NULL);
 }
 
 static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data) {
@@ -116,6 +120,15 @@ static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_in
   // If the menu is hidden, don't allow clicks
   if (layer_get_hidden(menu_layer_get_layer(screen->menu_layer))) {
     return;
+  }
+
+  if (screen->root_level == NULL) {
+    APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "Creating action menu root level");
+
+    screen->root_level = action_menu_level_create(ACTION_MENU_NUM_ITEMS);
+
+    action_menu_level_add_action(screen->root_level, "View departures", action_performed_callback, (void *)MENU_ACTION_VIEW_DEPARTURES);
+    action_menu_level_add_action(screen->root_level, "Pin to timeline", action_performed_callback, (void *)MENU_ACTION_PIN);
   }
 
   // Configure the ActionMenu Window about to be shown
@@ -131,7 +144,9 @@ static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_in
 
   // Show the ActionMenu
   screen->selected_calling_point_index = cell_index->row;
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Opening action menu: %p", screen->action_menu);
   screen->action_menu = action_menu_open(&config);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Action menu opened: %p", screen->action_menu);
 }
 
 // ------ END MENU LAYER CALLBACKS ------
@@ -179,6 +194,17 @@ static GRect get_menu_offscreen_frame(ServiceScreen *screen) {
                screen->menu_frame_start.size.w, screen->menu_frame_start.size.h);
 }
 
+static void free_menu_anim(ServiceScreen *screen) {
+  if (screen->menu_anim != NULL) {
+    animation_destroy(screen->menu_anim);
+  }
+  if (screen->menu_prop_anim != NULL) {
+    property_animation_destroy(screen->menu_prop_anim);
+  }
+  screen->menu_prop_anim = NULL;
+  screen->menu_anim = NULL;
+}
+
 static void animate_menu_in(ServiceScreen *screen) {
 #ifdef PBL_ROUND
   Layer *menu_layer = screen->route_path_layer;
@@ -192,11 +218,13 @@ static void animate_menu_in(ServiceScreen *screen) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Menu anim start: %d, %d, %d, %d", start.origin.x, start.origin.y, start.size.w, start.size.h);
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Menu anim end: %d, %d, %d, %d", end.origin.x, end.origin.y, end.size.w, end.size.h);
 
-  PropertyAnimation *prop_anim = property_animation_create_layer_frame(menu_layer, &start, &end);
-  Animation *anim = property_animation_get_animation(prop_anim);
-  animation_set_curve(anim, AnimationCurveEaseOut);
-  animation_set_duration(anim, MENU_ANIMATION_DURATION);
-  animation_schedule(anim);
+  free_menu_anim(screen);
+
+  screen->menu_prop_anim = property_animation_create_layer_frame(menu_layer, &start, &end);
+  screen->menu_anim = property_animation_get_animation(screen->menu_prop_anim);
+  animation_set_curve(screen->menu_anim, AnimationCurveEaseOut);
+  animation_set_duration(screen->menu_anim, MENU_ANIMATION_DURATION);
+  animation_schedule(screen->menu_anim);
 
 #ifdef PBL_ROUND
   layer_set_hidden(screen->route_path_layer, false);
@@ -228,20 +256,22 @@ static void animate_menu_out(ServiceScreen *screen) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Menu anim start: %d, %d, %d, %d", start.origin.x, start.origin.y, start.size.w, start.size.h);
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Menu anim end: %d, %d, %d, %d", end.origin.x, end.origin.y, end.size.w, end.size.h);
 
-  PropertyAnimation *prop_anim = property_animation_create_layer_frame(menu_layer, &start, &end);
-  Animation *anim = property_animation_get_animation(prop_anim);
-  animation_set_curve(anim, AnimationCurveEaseOut);
-  animation_set_duration(anim, MENU_ANIMATION_DURATION);
-  animation_set_handlers(anim,
+  free_menu_anim(screen);
+
+  screen->menu_prop_anim = property_animation_create_layer_frame(menu_layer, &start, &end);
+  screen->menu_anim = property_animation_get_animation(screen->menu_prop_anim);
+  animation_set_curve(screen->menu_anim, AnimationCurveEaseOut);
+  animation_set_duration(screen->menu_anim, MENU_ANIMATION_DURATION);
+  animation_set_handlers(screen->menu_anim,
                          (AnimationHandlers){
                              .stopped = menu_animated_out_callback,
                          },
                          screen);
-  animation_schedule(anim);
+  animation_schedule(screen->menu_anim);
 }
 
 // Displays the menu and binds the click handler
-static void activate_menu(ServiceScreen *screen) {
+static void activate_menu(ServiceScreen *screen, bool animated) {
   screen->is_menu_active = true;
   custom_status_bar_set_color(screen->status_bar, GColorWhite);
 
@@ -256,7 +286,15 @@ static void activate_menu(ServiceScreen *screen) {
 #endif
 
   service_summary_animate_out(screen->service_summary_layer);
-  animate_menu_in(screen);
+
+  if (animated) {
+    animate_menu_in(screen);
+  } else {
+#ifndef PBL_ROUND
+    layer_set_hidden(menu_layer_get_layer(screen->menu_layer), false);
+    layer_set_frame(menu_layer_get_layer(screen->menu_layer), screen->menu_frame_start);
+#endif
+  }
 }
 
 static void deactivate_menu(ServiceScreen *screen) {
@@ -356,7 +394,7 @@ static void window_down_handler(ClickRecognizerRef recognizer, void *context) {
 
   if (!screen->is_menu_active) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Switching to calling point list");
-    activate_menu(screen);
+    activate_menu(screen, true);
     return;
   }
 
@@ -396,6 +434,7 @@ static void summary_click_config_provider(void *context) {
 static void service_load_complete(ServiceScreen *screen) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Received all %d calling points", screen->available_calling_points);
   screen->is_loading = false;
+  screen->load_complete = true;
 
   COPY_STRING(screen->service_info.destination, get_destination_calling_point(screen)->crs);
 
@@ -410,6 +449,10 @@ static void service_load_complete(ServiceScreen *screen) {
 #ifdef PBL_ROUND
   round_route_path_set_data(screen->route_path_layer, screen->calling_points, screen->available_calling_points, screen->service_info.operatorCode);
 #endif
+
+  if (screen->is_menu_active) {
+    activate_menu(screen, false);
+  }
 }
 
 static void no_service(ServiceScreen *screen) {
@@ -504,22 +547,14 @@ void prv_load_service(ServiceScreen *screen) {
   screen->is_loading = true;
   screen->is_menu_active = false;
 
-  layer_set_hidden(screen->spinner_layer, false);
-  layer_set_hidden(screen->service_summary_layer, true);
-
   set_service_info_callback(service_info_callback, screen);
   set_calling_point_callback(calling_point_callback, screen);
   request_service(screen->service_info.serviceID, screen->service_info.origin);
 }
 
-void prv_init_service_action_menu(ServiceScreen *screen) {
-  screen->root_level = action_menu_level_create(ACTION_MENU_NUM_ITEMS);
+void service_window_appear(Window *window) {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Service screen appearing");
 
-  action_menu_level_add_action(screen->root_level, "View departures", action_performed_callback, (void *)MENU_ACTION_VIEW_DEPARTURES);
-  action_menu_level_add_action(screen->root_level, "Pin to timeline", action_performed_callback, (void *)MENU_ACTION_PIN);
-}
-
-void service_window_load(Window *window) {
   ServiceScreen *screen = window_get_user_data(window);
   screen->status_bar = custom_status_bar_layer_create();
 
@@ -553,21 +588,30 @@ void service_window_load(Window *window) {
 #endif
 
   layer_add_child(window_layer, screen->spinner_layer);
+  layer_set_hidden(screen->spinner_layer, !screen->is_loading);
 
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Initializing service summary");
   screen->service_summary_layer = service_summary_init(bounds_with_status_bar_no_padding(screen->window));
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Adding service summary to window");
   layer_add_child(window_layer, screen->service_summary_layer);
-  layer_set_hidden(screen->service_summary_layer, true);
+  layer_set_hidden(screen->service_summary_layer, !screen->load_complete);
 
   layer_add_child(window_layer, status_bar_layer_get_layer(screen->status_bar));
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Station screen initialized");
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Service screen initialized");
 
-  prv_load_service(screen);
-  prv_init_service_action_menu(screen);
+  if (screen->load_complete) {
+    service_load_complete(screen);
+  }
 }
 
-void service_window_unload(Window *window) {
+void service_window_disappear(Window *window) {
   ServiceScreen *screen = window_get_user_data(window);
-  custom_status_bar_layer_destroy(screen->status_bar);
+
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Service screen disappearing");
+
+  if (screen->status_bar != NULL) {
+    custom_status_bar_layer_destroy(screen->status_bar);
+  }
 
   if (screen->spinner_layer != NULL) {
     spinner_layer_deinit(screen->spinner_layer);
@@ -581,19 +625,19 @@ void service_window_unload(Window *window) {
     text_layer_destroy(screen->error_layer);
   }
 
+  free_menu_anim(screen);
+
 #ifdef PBL_ROUND
   round_route_path_deinit(screen->route_path_layer);
 #else
   menu_layer_destroy(screen->menu_layer);
 #endif
 
-  if (screen->action_menu != NULL) {
-    free(screen->action_menu);
-  }
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Service screen disappeared");
+}
 
-  if (screen->root_level != NULL) {
-    free(screen->root_level);
-  }
+void service_window_unload(Window *window) {
+  ServiceScreen *screen = window_get_user_data(window);
 
   service_screen_destroy(screen);
 }
@@ -615,15 +659,24 @@ ServiceScreen *service_screen_create(char *service_id, char *origin) {
   screen->service_summary_layer = NULL;
   screen->action_menu = NULL;
   screen->root_level = NULL;
+  screen->menu_prop_anim = NULL;
+  screen->menu_anim = NULL;
+
+  screen->load_complete = false;
+  screen->is_loading = false;
+  screen->is_menu_active = false;
 
   window_set_window_handlers(screen->window, (WindowHandlers){
-                                                 .load = service_window_load,
+                                                 .appear = service_window_appear,
+                                                 .disappear = service_window_disappear,
                                                  .unload = service_window_unload,
                                              });
 
   window_set_user_data(screen->window, screen);
 
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Service screen created");
+
+  prv_load_service(screen);
 
   return screen;
 }

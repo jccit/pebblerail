@@ -17,16 +17,35 @@ typedef struct {
   char *reason;
   OperatorInfo operator_info;
   CallingPointState state;
+
+  PropertyAnimation *prop_anim;
+  Animation *anim;
 } ServiceSummaryData;
 
-static GDrawCommandImage *s_train_icon;
-static GBitmap *s_down_icon_black;
-static GBitmap *s_down_icon_white;
+static GDrawCommandImage *s_train_icon = NULL;
+static GBitmap *s_down_icon_black = NULL;
+static GBitmap *s_down_icon_white = NULL;
 static GRect s_down_icon_bounds;
 static GFont s_destination_font;
 static GFont s_origin_font;
 static GFont s_operator_font;
 static GFont s_number_font;
+
+static void service_summary_load_arrow(bool white) {
+  uint32_t resource_id = white ? RESOURCE_ID_DOWN_ARROW_WHITE : RESOURCE_ID_DOWN_ARROW_BLACK;
+  GBitmap *unloaded_bitmap = white ? s_down_icon_black : s_down_icon_white;
+  GBitmap *loaded_bitmap = white ? s_down_icon_white : s_down_icon_black;
+
+  if (unloaded_bitmap != NULL) {
+    gbitmap_destroy(unloaded_bitmap);
+  }
+
+  if (loaded_bitmap != NULL) {
+    return;
+  }
+
+  loaded_bitmap = gbitmap_create_with_resource(resource_id);
+}
 
 static void service_summary_update_proc(Layer *layer, GContext *ctx) {
   ServiceSummaryData *service_summary_data = (ServiceSummaryData *)layer_get_data(layer);
@@ -119,14 +138,17 @@ static void service_summary_update_proc(Layer *layer, GContext *ctx) {
 
 ServiceSummaryLayer *service_summary_init(GRect bounds) {
   s_train_icon = gdraw_command_image_create_with_resource(RESOURCE_ID_TRAIN_SMALL);
-  s_down_icon_black = gbitmap_create_with_resource(RESOURCE_ID_DOWN_ARROW_BLACK);
-  s_down_icon_white = gbitmap_create_with_resource(RESOURCE_ID_DOWN_ARROW_WHITE);
+
+  APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "train icon = %p", s_train_icon);
+
   s_destination_font = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
   s_origin_font = fonts_get_system_font(FONT_KEY_GOTHIC_18);
   s_operator_font = fonts_get_system_font(FONT_KEY_GOTHIC_14);
   s_number_font = fonts_get_system_font(FONT_KEY_LECO_26_BOLD_NUMBERS_AM_PM);
 
-  s_down_icon_bounds = gbitmap_get_bounds(s_down_icon_black);
+  GBitmap *test_icon = gbitmap_create_with_resource(RESOURCE_ID_DOWN_ARROW_BLACK);
+  s_down_icon_bounds = gbitmap_get_bounds(test_icon);
+  gbitmap_destroy(test_icon);
 
   ServiceSummaryLayer *service_summary_layer = layer_create_with_data(bounds, sizeof(ServiceSummaryData));
   layer_set_update_proc(service_summary_layer, service_summary_update_proc);
@@ -138,10 +160,38 @@ ServiceSummaryLayer *service_summary_init(GRect bounds) {
   service_summary_data->operator_info = (OperatorInfo){"Unknown", GColorBlack};
   service_summary_data->time = "23:59";
 
+  service_summary_data->prop_anim = NULL;
+  service_summary_data->anim = NULL;
+
   return service_summary_layer;
 }
 
+void service_summary_free_anim(ServiceSummaryLayer *layer) {
+  ServiceSummaryData *service_summary_data = (ServiceSummaryData *)layer_get_data(layer);
+  if (service_summary_data->prop_anim != NULL) {
+    property_animation_destroy(service_summary_data->prop_anim);
+  }
+  if (service_summary_data->anim != NULL) {
+    animation_destroy(service_summary_data->anim);
+  }
+  service_summary_data->prop_anim = NULL;
+  service_summary_data->anim = NULL;
+}
+
 void service_summary_deinit(ServiceSummaryLayer *layer) {
+  ServiceSummaryData *service_summary_data = (ServiceSummaryData *)layer_get_data(layer);
+  if (service_summary_data->lateness != NULL) {
+    free(service_summary_data->lateness);
+  }
+  if (service_summary_data->platform != NULL) {
+    free(service_summary_data->platform);
+  }
+  if (service_summary_data->reason != NULL) {
+    free(service_summary_data->reason);
+  }
+
+  service_summary_free_anim(layer);
+
   gdraw_command_image_destroy(s_train_icon);
   gbitmap_destroy(s_down_icon_black);
   gbitmap_destroy(s_down_icon_white);
@@ -205,11 +255,13 @@ void service_summary_animate_out(ServiceSummaryLayer *summary_layer) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Service summary anim start: %d, %d, %d, %d", start.origin.x, start.origin.y, start.size.w, start.size.h);
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Service summary anim end: %d, %d, %d, %d", end.origin.x, end.origin.y, end.size.w, end.size.h);
 
-  PropertyAnimation *prop_anim = property_animation_create_layer_frame(layer, &start, &end);
-  Animation *anim = property_animation_get_animation(prop_anim);
-  animation_set_curve(anim, AnimationCurveEaseOut);
-  animation_set_duration(anim, SUMMARY_ANIMATION_DURATION);
-  animation_schedule(anim);
+  service_summary_free_anim(summary_layer);
+
+  service_summary_data->prop_anim = property_animation_create_layer_frame(layer, &start, &end);
+  service_summary_data->anim = property_animation_get_animation(service_summary_data->prop_anim);
+  animation_set_curve(service_summary_data->anim, AnimationCurveEaseOut);
+  animation_set_duration(service_summary_data->anim, SUMMARY_ANIMATION_DURATION);
+  animation_schedule(service_summary_data->anim);
 }
 
 void service_summary_animate_in(ServiceSummaryLayer *summary_layer) {
@@ -222,9 +274,11 @@ void service_summary_animate_in(ServiceSummaryLayer *summary_layer) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Service summary anim start: %d, %d, %d, %d", start.origin.x, start.origin.y, start.size.w, start.size.h);
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Service summary anim end: %d, %d, %d, %d", end.origin.x, end.origin.y, end.size.w, end.size.h);
 
-  PropertyAnimation *prop_anim = property_animation_create_layer_frame(layer, &start, &end);
-  Animation *anim = property_animation_get_animation(prop_anim);
-  animation_set_curve(anim, AnimationCurveEaseOut);
-  animation_set_duration(anim, SUMMARY_ANIMATION_DURATION);
-  animation_schedule(anim);
+  service_summary_free_anim(summary_layer);
+
+  service_summary_data->prop_anim = property_animation_create_layer_frame(layer, &start, &end);
+  service_summary_data->anim = property_animation_get_animation(service_summary_data->prop_anim);
+  animation_set_curve(service_summary_data->anim, AnimationCurveEaseOut);
+  animation_set_duration(service_summary_data->anim, SUMMARY_ANIMATION_DURATION);
+  animation_schedule(service_summary_data->anim);
 }

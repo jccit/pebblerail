@@ -29,6 +29,7 @@ struct DeparturesScreen {
   struct DepartureEntry departures[MAX_DEPARTURE_COUNT];
   uint8_t departure_count;
   uint8_t available_departures;
+  bool load_complete;
 };
 
 static void action_performed_callback(ActionMenu *action_menu, const ActionMenuItem *action, void *context) {
@@ -89,6 +90,13 @@ static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_in
     return;
   }
 
+  if (screen->root_level == NULL) {
+    screen->root_level = action_menu_level_create(ACTION_MENU_NUM_ITEMS);
+
+    action_menu_level_add_action(screen->root_level, "View stops", action_performed_callback, (void *)MENU_ACTION_VIEW_STOPS);
+    action_menu_level_add_action(screen->root_level, "Pin to timeline", action_performed_callback, (void *)MENU_ACTION_PIN);
+  }
+
   // Configure the ActionMenu Window about to be shown
   ActionMenuConfig config = (ActionMenuConfig){.root_level = screen->root_level,
                                                .colors =
@@ -109,6 +117,7 @@ static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_in
 
 static void departures_load_complete(DeparturesScreen *screen) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Received all %d departures", screen->available_departures);
+  screen->load_complete = true;
 
   menu_layer_reload_data(screen->menu_layer);
   layer_set_hidden(menu_layer_get_layer(screen->menu_layer), false);
@@ -179,17 +188,10 @@ void prv_load_departures(DeparturesScreen *screen) {
   request_departures(screen->crs);
 }
 
-void prv_init_departures_action_menu(DeparturesScreen *screen) {
-  screen->root_level = action_menu_level_create(ACTION_MENU_NUM_ITEMS);
-
-  action_menu_level_add_action(screen->root_level, "View stops", action_performed_callback, (void *)MENU_ACTION_VIEW_STOPS);
-  action_menu_level_add_action(screen->root_level, "Pin to timeline", action_performed_callback, (void *)MENU_ACTION_PIN);
-}
-
-void departures_window_load(Window *window) {
+void departures_window_appear(Window *window) {
   DeparturesScreen *screen = window_get_user_data(window);
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Departures window load");
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Departures window appear");
 
   screen->status_bar = custom_status_bar_layer_create();
 
@@ -217,30 +219,46 @@ void departures_window_load(Window *window) {
   layer_add_child(window_layer, screen->spinner_layer);
   layer_add_child(window_layer, status_bar_layer_get_layer(screen->status_bar));
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Departures window load complete");
+  if (screen->load_complete) {
+    departures_load_complete(screen);
+  }
+
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Departures window appear complete");
 }
 
-void departures_screen_destroy(DeparturesScreen *screen) {
-  custom_status_bar_layer_destroy(screen->status_bar);
+void departures_window_disappear(Window *window) {
+  DeparturesScreen *screen = window_get_user_data(window);
+
+  if (screen->status_bar != NULL) {
+    custom_status_bar_layer_destroy(screen->status_bar);
+    screen->status_bar = NULL;
+  }
 
   if (screen->menu_layer != NULL) {
     menu_layer_destroy(screen->menu_layer);
+    screen->menu_layer = NULL;
   }
 
   if (screen->spinner_layer != NULL) {
     spinner_layer_deinit(screen->spinner_layer);
+    screen->spinner_layer = NULL;
   }
 
   if (screen->error_layer != NULL) {
     text_layer_destroy(screen->error_layer);
+    screen->error_layer = NULL;
   }
+}
 
+void departures_screen_destroy(DeparturesScreen *screen) {
   if (screen->action_menu != NULL) {
     free(screen->action_menu);
+    screen->action_menu = NULL;
   }
 
   if (screen->root_level != NULL) {
     free(screen->root_level);
+    screen->root_level = NULL;
   }
 
   window_destroy(screen->window);
@@ -266,18 +284,19 @@ DeparturesScreen *departures_screen_create(char *crs, char *station_name) {
   screen->error_layer = NULL;
   screen->action_menu = NULL;
   screen->root_level = NULL;
+  screen->load_complete = false;
 
   screen->window = window_create();
 
   window_set_window_handlers(screen->window, (WindowHandlers){
-                                                 .load = departures_window_load,
+                                                 .appear = departures_window_appear,
+                                                 .disappear = departures_window_disappear,
                                                  .unload = departures_window_unload,
                                              });
 
   window_set_user_data(screen->window, screen);
 
   prv_load_departures(screen);
-  prv_init_departures_action_menu(screen);
 
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Departures screen created");
 
