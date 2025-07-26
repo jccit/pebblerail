@@ -27,14 +27,8 @@ void spinner_layer_update_proc(Layer *layer, GContext *ctx) {
   int angle_start = DEG_TO_TRIGANGLE(spinner_data->angle);
   int angle_end = DEG_TO_TRIGANGLE(spinner_data->angle + spinner_angle_gap);
 
-  // Draw the background arc
-#ifdef PBL_BW
-  graphics_context_set_fill_color(ctx, GColorBlack);
-  graphics_draw_arc(ctx, spinner_data->bounds, GOvalScaleModeFitCircle, angle_zero, angle_full);
-#else
   graphics_context_set_fill_color(ctx, GColorLightGray);
   graphics_fill_radial(ctx, spinner_data->bounds, GOvalScaleModeFitCircle, spinner_line_width, angle_zero, angle_full);
-#endif
 
   // Draw the loading arc
   graphics_context_set_fill_color(ctx, GColorBlack);
