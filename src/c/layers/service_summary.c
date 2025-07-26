@@ -2,6 +2,7 @@
 
 #include "../tocs.h"
 #include "../utils.h"
+#include "../window_manager.h"
 
 const int SUMMARY_ANIMATION_DURATION = 150;
 const int SUMMARY_ANIMATION_Y_OFFSET = STATUS_BAR_LAYER_HEIGHT;
@@ -223,7 +224,7 @@ void service_summary_set_data(ServiceSummaryLayer *layer, char *origin, char *de
     size_t lateness_length = lateness_end - lateness_start;
     size_t lateness_total_length = lateness_length + strlen(lateness_suffix);
 
-    char *lateness = malloc(lateness_total_length + 1);
+    char *lateness = wm_alloc(lateness_total_length + 1);
     strncpy(lateness, lateness_start, lateness_length);
     strcat(lateness, lateness_suffix);
     lateness[lateness_total_length] = '\0';
@@ -232,7 +233,7 @@ void service_summary_set_data(ServiceSummaryLayer *layer, char *origin, char *de
 
   char *platform_prefix = "Plat: ";
   uint16_t platform_length = strlen(platform_prefix) + strlen(platform);
-  char *platform_text = malloc(platform_length + 1);
+  char *platform_text = wm_alloc(platform_length + 1);
   strcpy(platform_text, platform_prefix);
   strcat(platform_text, platform);
   service_summary_data->platform = platform_text;
@@ -252,8 +253,8 @@ void service_summary_animate_out(ServiceSummaryLayer *summary_layer) {
   GRect start = service_summary_data->bounds;
   GRect end = GRect(start.origin.x, start.origin.y - (start.size.h + SUMMARY_ANIMATION_Y_OFFSET), start.size.w, start.size.h);
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Service summary anim start: %d, %d, %d, %d", start.origin.x, start.origin.y, start.size.w, start.size.h);
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Service summary anim end: %d, %d, %d, %d", end.origin.x, end.origin.y, end.size.w, end.size.h);
+  APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "Service summary anim start: %d, %d, %d, %d", start.origin.x, start.origin.y, start.size.w, start.size.h);
+  APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "Service summary anim end: %d, %d, %d, %d", end.origin.x, end.origin.y, end.size.w, end.size.h);
 
   service_summary_free_anim(summary_layer);
 
@@ -271,8 +272,8 @@ void service_summary_animate_in(ServiceSummaryLayer *summary_layer) {
   GRect end = service_summary_data->bounds;
   GRect start = GRect(end.origin.x, end.origin.y - (end.size.h + SUMMARY_ANIMATION_Y_OFFSET), end.size.w, end.size.h);
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Service summary anim start: %d, %d, %d, %d", start.origin.x, start.origin.y, start.size.w, start.size.h);
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Service summary anim end: %d, %d, %d, %d", end.origin.x, end.origin.y, end.size.w, end.size.h);
+  APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "Service summary anim start: %d, %d, %d, %d", start.origin.x, start.origin.y, start.size.w, start.size.h);
+  APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "Service summary anim end: %d, %d, %d, %d", end.origin.x, end.origin.y, end.size.w, end.size.h);
 
   service_summary_free_anim(summary_layer);
 

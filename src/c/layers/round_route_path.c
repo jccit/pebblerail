@@ -3,6 +3,7 @@
 #include "../tocs.h"
 #include "calling_point_icon.h"
 
+#ifdef PBL_ROUND
 typedef struct {
   CallingPointEntry *callingPoints;
   int callingPointCount;
@@ -187,7 +188,7 @@ bool round_route_next_calling_point(Layer *layer) {
     return true;
   }
   round_route_set_selected(layer, data->selected + 1);
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Selected calling point: %d", data->selected);
+  APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "Selected calling point: %d", data->selected);
   return false;
 }
 
@@ -197,7 +198,7 @@ bool round_route_previous_calling_point(Layer *layer) {
     return true;
   }
   round_route_set_selected(layer, data->selected - 1);
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Selected calling point: %d", data->selected);
+  APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "Selected calling point: %d", data->selected);
   return false;
 }
 
@@ -207,3 +208,4 @@ void round_route_path_deinit(Layer *layer) {
   text_layer_destroy(data->time_layer);
   layer_destroy(layer);
 }
+#endif

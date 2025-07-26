@@ -7,6 +7,7 @@
 #include "../layers/spinner_layer.h"
 #include "../layers/status_bar.h"
 #include "../utils.h"
+#include "../window_manager.h"
 #include "departures_screen.h"
 
 #ifdef PBL_ROUND
@@ -111,7 +112,7 @@ static int16_t menu_get_header_height_callback(MenuLayer *menu_layer, uint16_t s
 
 static void service_action_menu_close_callback(ActionMenu *menu, const ActionMenuItem *performed_action, void *context) {
   ServiceScreen *screen = context;
-  action_menu_hierarchy_destroy(action_menu_get_root_level(screen->action_menu), NULL, NULL);
+  // action_menu_hierarchy_destroy(action_menu_get_root_level(screen->action_menu), NULL, NULL);
 }
 
 static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data) {
@@ -120,15 +121,6 @@ static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_in
   // If the menu is hidden, don't allow clicks
   if (layer_get_hidden(menu_layer_get_layer(screen->menu_layer))) {
     return;
-  }
-
-  if (screen->root_level == NULL) {
-    APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "Creating action menu root level");
-
-    screen->root_level = action_menu_level_create(ACTION_MENU_NUM_ITEMS);
-
-    action_menu_level_add_action(screen->root_level, "View departures", action_performed_callback, (void *)MENU_ACTION_VIEW_DEPARTURES);
-    action_menu_level_add_action(screen->root_level, "Pin to timeline", action_performed_callback, (void *)MENU_ACTION_PIN);
   }
 
   // Configure the ActionMenu Window about to be shown
@@ -156,7 +148,7 @@ static uint16_t get_origin_calling_point_index(ServiceScreen *screen) {
   if (screen->available_calling_points == screen->calling_point_count) {
     for (int i = 0; i < screen->available_calling_points; i++) {
       if (strcmp(screen->calling_points[i].crs, screen->service_info.origin) == 0) {
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "Origin calling point %s = %s index: %d", screen->calling_points[i].crs, screen->service_info.origin, i);
+        APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "Origin calling point %s = %s index: %d", screen->calling_points[i].crs, screen->service_info.origin, i);
         return i;
       }
     }
@@ -215,8 +207,8 @@ static void animate_menu_in(ServiceScreen *screen) {
   GRect start = get_menu_offscreen_frame(screen);
   GRect end = screen->menu_frame_start;
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Menu anim start: %d, %d, %d, %d", start.origin.x, start.origin.y, start.size.w, start.size.h);
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Menu anim end: %d, %d, %d, %d", end.origin.x, end.origin.y, end.size.w, end.size.h);
+  APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "Menu anim start: %d, %d, %d, %d", start.origin.x, start.origin.y, start.size.w, start.size.h);
+  APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "Menu anim end: %d, %d, %d, %d", end.origin.x, end.origin.y, end.size.w, end.size.h);
 
   free_menu_anim(screen);
 
@@ -253,8 +245,8 @@ static void animate_menu_out(ServiceScreen *screen) {
   GRect start = screen->menu_frame_start;
   GRect end = get_menu_offscreen_frame(screen);
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Menu anim start: %d, %d, %d, %d", start.origin.x, start.origin.y, start.size.w, start.size.h);
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Menu anim end: %d, %d, %d, %d", end.origin.x, end.origin.y, end.size.w, end.size.h);
+  APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "Menu anim start: %d, %d, %d, %d", start.origin.x, start.origin.y, start.size.w, start.size.h);
+  APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "Menu anim end: %d, %d, %d, %d", end.origin.x, end.origin.y, end.size.w, end.size.h);
 
   free_menu_anim(screen);
 
@@ -268,6 +260,15 @@ static void animate_menu_out(ServiceScreen *screen) {
                          },
                          screen);
   animation_schedule(screen->menu_anim);
+}
+
+static void prv_init_service_action_menu(ServiceScreen *screen) {
+  APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "Creating action menu root level");
+
+  screen->root_level = action_menu_level_create(ACTION_MENU_NUM_ITEMS);
+
+  action_menu_level_add_action(screen->root_level, "View departures", action_performed_callback, (void *)MENU_ACTION_VIEW_DEPARTURES);
+  action_menu_level_add_action(screen->root_level, "Pin to timeline", action_performed_callback, (void *)MENU_ACTION_PIN);
 }
 
 // Displays the menu and binds the click handler
@@ -320,14 +321,14 @@ static void show_service_summary(ServiceScreen *screen) {
   if (strlen(screen->service_info.cancelReason) > 1) {
     char *prefix = part_cancelled ? "Part cancelled due to " : "Cancelled due to ";
     uint16_t total_length = strlen(prefix) + strlen(screen->service_info.cancelReason) + 1;
-    reason = malloc(total_length);
+    reason = wm_alloc(total_length);
 
     strcpy(reason, prefix);
     strcat(reason, screen->service_info.cancelReason);
   } else if (strlen(screen->service_info.delayReason) > 1) {
     char *prefix = "Delayed due to ";
     uint16_t total_length = strlen(prefix) + strlen(screen->service_info.delayReason) + 1;
-    reason = malloc(total_length);
+    reason = wm_alloc(total_length);
 
     strcpy(reason, prefix);
     strcat(reason, screen->service_info.delayReason);
@@ -527,7 +528,7 @@ static void calling_point_callback(DictionaryIterator *iter, void *context) {
 
   screen->calling_point_count++;
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Received calling point %d: %s, %s, %s", screen->calling_point_count,
+  APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "Received calling point %d: %s, %s, %s", screen->calling_point_count,
           screen->calling_points[screen->calling_point_count - 1].destination, screen->calling_points[screen->calling_point_count - 1].time,
           screen->calling_points[screen->calling_point_count - 1].platform);
 
@@ -643,7 +644,7 @@ void service_window_unload(Window *window) {
 }
 
 ServiceScreen *service_screen_create(char *service_id, char *origin) {
-  ServiceScreen *screen = malloc(sizeof(ServiceScreen));
+  ServiceScreen *screen = wm_alloc(sizeof(ServiceScreen));
 
   COPY_STRING(screen->service_info.serviceID, service_id);
   COPY_STRING(screen->service_info.origin, origin);
@@ -676,12 +677,13 @@ ServiceScreen *service_screen_create(char *service_id, char *origin) {
 
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Service screen created");
 
+  prv_init_service_action_menu(screen);
   prv_load_service(screen);
 
   return screen;
 }
 
-void service_screen_push(ServiceScreen *screen) { window_stack_push(screen->window, true); }
+void service_screen_push(ServiceScreen *screen) { window_manager_push_window(screen->window); }
 
 void service_screen_destroy(ServiceScreen *screen) {
   window_destroy(screen->window);

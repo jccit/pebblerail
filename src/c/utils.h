@@ -9,3 +9,5 @@ TextLayer *create_error_layer(Window *window, char *message);
 GSize graphics_draw_text_get_size(GContext *ctx, char *text, GFont font, GRect bounds, GTextOverflowMode overflow_mode, GTextAlignment alignment);
 
 void to_local_time(char *time, char *locale_time);
+
+size_t check_free_memory();

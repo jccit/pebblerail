@@ -75,3 +75,11 @@ void to_local_time(char *time_str, char *locale_time) {
 
   strftime(locale_time, 6, "%H:%M", local_tm);
 }
+
+size_t check_free_memory() {
+  size_t free_memory = heap_bytes_free();
+  size_t used_memory = heap_bytes_used();
+  APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "Free memory: %d, Used memory: %d", free_memory, used_memory);
+
+  return free_memory;
+}

@@ -5,6 +5,7 @@
 #include "../layers/spinner_layer.h"
 #include "../layers/status_bar.h"
 #include "../utils.h"
+#include "../window_manager.h"
 #include "departures_screen.h"
 
 #define MAX_STATION_COUNT 5
@@ -118,7 +119,7 @@ void prv_load_stations(StationScreen *screen) {
   if (screen->stations != NULL) {
     free(screen->stations);
   }
-  screen->stations = malloc(sizeof(Station) * MAX_STATION_COUNT);
+  screen->stations = wm_alloc(sizeof(Station) * MAX_STATION_COUNT);
 
   set_closest_station_callback(closest_station_callback, (void *)screen);
   request_closest_stations();
@@ -188,7 +189,7 @@ void station_window_unload(Window *window) {
 }
 
 StationScreen *station_screen_create() {
-  StationScreen *screen = malloc(sizeof(StationScreen));
+  StationScreen *screen = wm_alloc(sizeof(StationScreen));
   screen->window = window_create();
 
   window_set_window_handlers(screen->window, (WindowHandlers){
@@ -208,5 +209,5 @@ StationScreen *station_screen_create() {
 
 void station_screen_push(StationScreen *screen) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Station screen pushed");
-  window_stack_push(screen->window, true);
+  window_manager_push_window(screen->window);
 }

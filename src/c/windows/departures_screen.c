@@ -5,6 +5,7 @@
 #include "../layers/spinner_layer.h"
 #include "../layers/status_bar.h"
 #include "../utils.h"
+#include "../window_manager.h"
 #include "service_screen.h"
 
 #define ACTION_MENU_NUM_ITEMS 2
@@ -172,7 +173,7 @@ static void departures_callback(DictionaryIterator *iter, void *context) {
 
   screen->departure_count++;
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Received departure %d: %s, %s, %s, %s", screen->departure_count,
+  APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "Received departure %d: %s, %s, %s, %s", screen->departure_count,
           screen->departures[screen->departure_count - 1].serviceID, screen->departures[screen->departure_count - 1].destination,
           screen->departures[screen->departure_count - 1].departureTime, screen->departures[screen->departure_count - 1].platform);
 
@@ -273,7 +274,7 @@ void departures_window_unload(Window *window) {
 }
 
 DeparturesScreen *departures_screen_create(char *crs, char *station_name) {
-  DeparturesScreen *screen = malloc(sizeof(DeparturesScreen));
+  DeparturesScreen *screen = wm_alloc(sizeof(DeparturesScreen));
 
   screen->crs = crs;
   screen->station_name = station_name;
@@ -305,5 +306,5 @@ DeparturesScreen *departures_screen_create(char *crs, char *station_name) {
 
 void departures_screen_push(DeparturesScreen *screen) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Departures screen pushed");
-  window_stack_push(screen->window, true);
+  window_manager_push_window(screen->window);
 }

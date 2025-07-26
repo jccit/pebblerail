@@ -9,7 +9,5 @@ int main(void) {
   StationScreen *station_screen = station_screen_create();
   station_screen_push(station_screen);
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Done initializing");
-
   app_event_loop();
 }
