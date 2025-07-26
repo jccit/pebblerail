@@ -7,7 +7,7 @@
   ],
   "private": true,
   "scripts": {
-    "build": "rollup -c",
+    "build": "node resources/operators.mjs && rollup -c",
     "proto": "pbjs -t static-module -w es6 --es6 -o src/ts/gen/stations.js src/ts/proto/stations.proto && pbts -o src/ts/gen/stations.d.ts src/ts/gen/stations.js"
   },
   "pebble": {
@@ -86,6 +86,11 @@
           "type": "png",
           "name": "UP_ARROW_WHITE",
           "file": "up_arrow_white.png"
+        },
+        {
+          "type": "raw",
+          "name": "OPERATOR_INFO",
+          "file": "operators.bin"
         }
       ],
       "publishedMedia": [
