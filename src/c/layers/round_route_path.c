@@ -160,6 +160,7 @@ void round_route_path_set_data(Layer *layer, CallingPointEntry *callingPoints, i
   data->selected = 0;
 
   OperatorInfo op_info = operator_info(operatorCode);
+  free(op_info.name);  // we don't need the name for this view, free it immediately
   data->operator_color = op_info.color;
   data->contrast_color = gcolor_legible_over(data->operator_color);
 

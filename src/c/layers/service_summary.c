@@ -157,7 +157,7 @@ ServiceSummaryLayer *service_summary_init(GRect bounds) {
   service_summary_data->bounds = bounds;
   service_summary_data->destination = "";
   service_summary_data->operator_code = "";
-  service_summary_data->operator_info = (OperatorInfo){"Unknown", GColorBlack};
+  service_summary_data->operator_info = (OperatorInfo){NULL, GColorBlack};
   service_summary_data->time = "23:59";
 
   service_summary_data->prop_anim = NULL;
@@ -189,6 +189,9 @@ void service_summary_deinit(ServiceSummaryLayer *layer) {
   if (service_summary_data->reason != NULL) {
     free(service_summary_data->reason);
   }
+  if (service_summary_data->operator_info.name != NULL) {
+    free(service_summary_data->operator_info.name);
+  }
 
   service_summary_free_anim(layer);
 
@@ -206,9 +209,14 @@ void service_summary_set_data(ServiceSummaryLayer *layer, char *origin, char *de
   service_summary_data->origin = origin;
   service_summary_data->destination = destination;
   service_summary_data->operator_code = operator_code;
-  service_summary_data->operator_info = operator_info(operator_code);
   service_summary_data->reason = reason;
   service_summary_data->state = state;
+
+  if (service_summary_data->operator_info.name != NULL) {
+    free(service_summary_data->operator_info.name);
+  }
+
+  service_summary_data->operator_info = operator_info(operator_code);
 
   char *space_ptr = strchr(time, ' ');
   if (space_ptr == NULL) {

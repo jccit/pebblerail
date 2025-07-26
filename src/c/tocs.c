@@ -26,26 +26,31 @@ static int operator_info_index(const char *search_key) {
 OperatorInfo operator_info(char *requested_code) {
   ResHandle handle = resource_get_handle(RESOURCE_ID_OPERATOR_INFO);
   size_t res_size = resource_size(handle);
+  char *name = malloc(OPERATOR_INFO_SIZE - 1);
+  strcpy(name, "Unknown");
 
   int index = operator_info_index(requested_code);
   if (index == -1) {
-    return (OperatorInfo){"Unknown", GColorWhite};
+    return (OperatorInfo){name, GColorWhite};
   }
 
   uint8_t *op_buffer = malloc(OPERATOR_INFO_SIZE);
   size_t loaded_bytes = resource_load_byte_range(handle, index * OPERATOR_INFO_SIZE, op_buffer, OPERATOR_INFO_SIZE);
 
   if (loaded_bytes != OPERATOR_INFO_SIZE) {
-    return (OperatorInfo){"Unknown", GColorWhite};
+    return (OperatorInfo){name, GColorWhite};
   }
 
-  char *name = (char *)op_buffer;
+  memcpy(name, op_buffer, OPERATOR_INFO_SIZE - 1);
+  memset(op_buffer, 0, OPERATOR_INFO_SIZE - 2);
 
 #ifdef PBL_BW
   GColor colour = GColorWhite;
 #else
-  GColor colour = (GColor8){.argb = op_buffer[32]};
+  GColor colour = (GColor8){.argb = op_buffer[OPERATOR_INFO_SIZE - 1]};
 #endif
+
+  free(op_buffer);
 
   return (OperatorInfo){name, colour};
 }
