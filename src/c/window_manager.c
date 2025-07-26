@@ -3,10 +3,12 @@
 #include "utils.h"
 
 #ifdef PBL_PLATFORM_APLITE
-#define MEMORY_SAFETY_MARGIN 1600
+#define MEMORY_SAFETY_MARGIN 1800
+#define MIN_WINDOWS 1
 #define MAX_WINDOWS 4
 #else
 #define MEMORY_SAFETY_MARGIN 2048
+#define MIN_WINDOWS 2
 #define MAX_WINDOWS 8
 #endif
 
@@ -49,7 +51,7 @@ void window_manager_destroy_window(Window *window) {
 }
 
 void window_manager_free_oldest() {
-  if (s_window_count <= 1) {
+  if (s_window_count <= MIN_WINDOWS) {
     APP_LOG(APP_LOG_LEVEL_WARNING, "WM: Not enough windows to free");
     return;
   }
