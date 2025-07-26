@@ -2,8 +2,13 @@
 
 #include "utils.h"
 
+#ifdef PBL_PLATFORM_APLITE
+#define MEMORY_SAFETY_MARGIN 1600
+#define MAX_WINDOWS 4
+#else
 #define MEMORY_SAFETY_MARGIN 2048
-#define MAX_WINDOWS 10
+#define MAX_WINDOWS 8
+#endif
 
 static Window *s_windows[MAX_WINDOWS];
 static uint8_t s_window_count = 0;
@@ -37,6 +42,8 @@ void window_manager_destroy_window(Window *window) {
       break;
     }
   }
+
+  APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "WM: Window count after free: %d", s_window_count);
 
   window_stack_remove(window, false);
 }

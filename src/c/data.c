@@ -1,7 +1,7 @@
 #include "data.h"
 
-const uint32_t inbox_size = 512;
-const uint32_t outbox_size = 256;
+const uint32_t inbox_size = 400;
+const uint32_t outbox_size = 128;
 const uint32_t CACHE_COMMAND_DELAY_MS = 500;
 
 static bool js_ready = false;
@@ -110,8 +110,8 @@ void inbox_received_callback(DictionaryIterator *iter, void *context) {
 // ------ END APP MESSAGE CALLBACKS ------
 
 void data_init() {
-  app_message_open(inbox_size, outbox_size);
   app_message_register_inbox_received(inbox_received_callback);
+  app_message_open(inbox_size, outbox_size);
 }
 
 void request_closest_stations() { send_data_request(COMMAND_TYPE_STATION_LIST, NULL, 0); }
@@ -119,7 +119,7 @@ void request_closest_stations() { send_data_request(COMMAND_TYPE_STATION_LIST, N
 void request_departures(char *crs) { send_data_request(COMMAND_TYPE_DEPARTURES, crs, strlen(crs)); }
 
 void request_service(char *service_id, char *from_crs) {
-  char combined[256];
+  char combined[outbox_size];
   snprintf(combined, sizeof(combined), "%s;%s", service_id, from_crs);
   send_data_request(COMMAND_TYPE_SERVICE, combined, strlen(combined));
 }
@@ -145,7 +145,7 @@ void set_calling_point_callback(void (*callback)(DictionaryIterator *iter, void 
 }
 
 void pin_calling_point(char *service_id, char *crs, bool isArrival) {
-  char combined[256];
+  char combined[outbox_size];
   snprintf(combined, sizeof(combined), "%s;%s;%s", service_id, crs, isArrival ? "arrival" : "departure");
   send_data_request(COMMAND_TYPE_PIN_CALLING_POINT, combined, strlen(combined));
 }
