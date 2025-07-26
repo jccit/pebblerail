@@ -24,28 +24,29 @@ typedef struct {
 } ServiceSummaryData;
 
 static GDrawCommandImage *s_train_icon = NULL;
-static GBitmap *s_down_icon_black = NULL;
-static GBitmap *s_down_icon_white = NULL;
+static GBitmap *s_down_icon = NULL;
 static GRect s_down_icon_bounds;
 static GFont s_destination_font;
 static GFont s_origin_font;
 static GFont s_operator_font;
 static GFont s_number_font;
 
-static void service_summary_load_arrow(bool white) {
-  uint32_t resource_id = white ? RESOURCE_ID_DOWN_ARROW_WHITE : RESOURCE_ID_DOWN_ARROW_BLACK;
-  GBitmap *unloaded_bitmap = white ? s_down_icon_black : s_down_icon_white;
-  GBitmap *loaded_bitmap = white ? s_down_icon_white : s_down_icon_black;
-
-  if (unloaded_bitmap != NULL) {
-    gbitmap_destroy(unloaded_bitmap);
+static void service_summary_load_icons(ServiceSummaryData *service_summary_data) {
+  if (s_train_icon == NULL) {
+    s_train_icon = gdraw_command_image_create_with_resource(RESOURCE_ID_TRAIN_SMALL);
+    APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "train icon = %p", s_train_icon);
   }
 
-  if (loaded_bitmap != NULL) {
-    return;
+#ifndef PBL_PLATFORM_APLITE
+  if (s_down_icon == NULL) {
+    bool use_white_arrow = gcolor_equal(gcolor_legible_over(service_summary_data->operator_info.color), GColorWhite);
+    if (s_down_icon != NULL) {
+      gbitmap_destroy(s_down_icon);
+      s_down_icon = NULL;
+    }
+    s_down_icon = gbitmap_create_with_resource(use_white_arrow ? RESOURCE_ID_DOWN_ARROW_WHITE : RESOURCE_ID_DOWN_ARROW_BLACK);
   }
-
-  loaded_bitmap = gbitmap_create_with_resource(resource_id);
+#endif
 }
 
 static void service_summary_update_proc(Layer *layer, GContext *ctx) {
@@ -53,14 +54,11 @@ static void service_summary_update_proc(Layer *layer, GContext *ctx) {
   GRect bounds = service_summary_data->bounds;
   GColor bg_color = service_summary_data->operator_info.color;
   GColor fg_color = gcolor_legible_over(bg_color);
-  GBitmap *down_icon = s_down_icon_white;
   bool show_reason = service_summary_data->reason != NULL;
   bool show_lateness = service_summary_data->lateness != NULL;
   bool show_platform = service_summary_data->platform != NULL;
 
-  if (gcolor_equal(fg_color, GColorBlack)) {
-    down_icon = s_down_icon_black;
-  }
+  service_summary_load_icons(service_summary_data);
 
   graphics_context_set_fill_color(ctx, bg_color);
   graphics_context_set_text_color(ctx, fg_color);
@@ -132,14 +130,15 @@ static void service_summary_update_proc(Layer *layer, GContext *ctx) {
   // status_alignment);
 
   // Down arrow
-  GPoint icon_position = GPoint((bounds.size.w / 2) - (s_down_icon_bounds.size.w / 2), bounds.size.h - s_down_icon_bounds.size.h - 4);
-  GRect icon_bounds = GRect(icon_position.x, icon_position.y, s_down_icon_bounds.size.w, s_down_icon_bounds.size.h);
-  graphics_draw_bitmap_in_rect(ctx, down_icon, icon_bounds);
+  if (s_down_icon != NULL) {
+    GPoint icon_position = GPoint((bounds.size.w / 2) - (s_down_icon_bounds.size.w / 2), bounds.size.h - s_down_icon_bounds.size.h - 4);
+    GRect icon_bounds = GRect(icon_position.x, icon_position.y, s_down_icon_bounds.size.w, s_down_icon_bounds.size.h);
+    graphics_draw_bitmap_in_rect(ctx, s_down_icon, icon_bounds);
+  }
 }
 
 ServiceSummaryLayer *service_summary_init(GRect bounds) {
   s_train_icon = gdraw_command_image_create_with_resource(RESOURCE_ID_TRAIN_SMALL);
-
   APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "train icon = %p", s_train_icon);
 
   s_destination_font = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
@@ -194,8 +193,10 @@ void service_summary_deinit(ServiceSummaryLayer *layer) {
   service_summary_free_anim(layer);
 
   gdraw_command_image_destroy(s_train_icon);
-  gbitmap_destroy(s_down_icon_black);
-  gbitmap_destroy(s_down_icon_white);
+  gbitmap_destroy(s_down_icon);
+  s_train_icon = NULL;
+  s_down_icon = NULL;
+
   layer_destroy(layer);
 }
 
@@ -237,6 +238,8 @@ void service_summary_set_data(ServiceSummaryLayer *layer, char *origin, char *de
   strcpy(platform_text, platform_prefix);
   strcat(platform_text, platform);
   service_summary_data->platform = platform_text;
+
+  service_summary_load_icons(service_summary_data);
 
   layer_mark_dirty(layer);
 }
