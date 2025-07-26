@@ -3,8 +3,6 @@ export interface Station {
   crs: string;
   latitude: number;
   longitude: number;
-  stationOperator: string;
-  availableOperators: string[];
 }
 
 export interface StationWithDistance extends Station {

@@ -1,17 +1,9 @@
-import { fetchBinary } from "./fetch";
-import {
-  countStations,
-  exportStationFileJSON,
-  findClosestStations,
-  loadStationFileJSON,
-  readStationFile,
-} from "./stationFile";
+import { findClosestStations } from "./stationFile";
 import { requestLocation, getLocation } from "./location";
 import { sendDepartureList, sendServiceInfo, sendStationList } from "./data";
 import { getDepartureBoard } from "./departures";
 import { getServiceInfo } from "./service";
 import { pinCallingPoint } from "./timeline";
-import { config } from "./config";
 
 Pebble.addEventListener("ready", (e) => {
   console.log("PKJS ready, sending jsReady message");
@@ -39,7 +31,7 @@ Pebble.addEventListener("appmessage", (e) => {
   switch (command) {
     case "stationList":
       console.log("Station list requested");
-      getStationList();
+      stationFileLoaded();
       break;
     case "departures":
       const crs = dict.requestData;
@@ -75,41 +67,6 @@ function stationFileLoaded() {
     console.log("closest stations", JSON.stringify(closest));
 
     sendStationList(closest);
-  });
-}
-
-function getStationList() {
-  const existingFile = localStorage.getItem("stationFile");
-
-  if (existingFile) {
-    console.log("loading station file from localStorage");
-    loadStationFileJSON(existingFile);
-
-    if (countStations() > 0) {
-      stationFileLoaded();
-      return;
-    }
-  }
-
-  console.log("starting fetch");
-
-  fetchBinary(`${config.service}/api/stations`, (response) => {
-    if (!response) {
-      console.log("no response");
-      return;
-    }
-
-    console.log("got binary of length", response.length);
-    console.log("decoding station file");
-
-    readStationFile(response);
-
-    console.log("persisting station file");
-    localStorage.setItem("stationFile", exportStationFileJSON());
-
-    console.log(`decoded ${countStations()} stations`);
-
-    stationFileLoaded();
   });
 }
 

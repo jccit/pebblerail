@@ -1,32 +1,18 @@
-import { Station, StationWithDistance } from "./types/station";
-import { StationFile } from "./gen/stations";
+import { StationWithDistance } from "./types/station";
 import "core-js/modules/es.object.values";
 
-let stationFile: Record<string, Station> | null = null;
-
-export function readStationFile(buffer: Uint8Array) {
-  const decoded = StationFile.decode(buffer);
-  stationFile = decoded.stations as Record<string, Station>;
-}
-
-export function loadStationFileJSON(json: string) {
-  stationFile = JSON.parse(json);
-}
-
-export function exportStationFileJSON() {
-  return JSON.stringify(stationFile);
-}
+import stationData from "./data/stations.json";
 
 export function getStation(id: string) {
-  return stationFile?.[id];
+  return stationData[id as keyof typeof stationData];
 }
 
 export function countStations() {
-  if (!stationFile) {
+  if (!stationData) {
     return 0;
   }
 
-  return Object.keys(stationFile).length;
+  return Object.keys(stationData).length;
 }
 
 export function findClosestStations(
@@ -34,14 +20,14 @@ export function findClosestStations(
   lon: number,
   count: number
 ): StationWithDistance[] {
-  if (!stationFile) {
+  if (!stationData) {
     return [];
   }
 
   const toRad = Math.PI / 180;
   const earthRadiusMiles = 3958.8;
 
-  const stationsWithDistance = Object.values(stationFile).map((station) => {
+  const stationsWithDistance = Object.values(stationData).map((station) => {
     const dLat = (station.latitude - lat) * toRad;
     const dLon = (station.longitude - lon) * toRad;
     const lat1 = lat * toRad;
