@@ -36,7 +36,7 @@ struct DeparturesScreen {
 static void action_performed_callback(ActionMenu *action_menu, const ActionMenuItem *action, void *context) {
   DeparturesScreen *screen = context;
   DepartureMenuAction selected_action = (DepartureMenuAction)action_menu_item_get_action_data(action);
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Selected action: %d", selected_action);
+  LOG_DEBUG("Selected action: %d", selected_action);
 
   if (selected_action == MENU_ACTION_VIEW_STOPS) {
     ServiceScreen *service_screen = service_screen_create(screen->departures[screen->selected_departure_index].serviceID, screen->crs);
@@ -117,7 +117,7 @@ static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_in
 // ------ END MENU LAYER CALLBACKS ------
 
 static void departures_load_complete(DeparturesScreen *screen) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Received all %d departures", screen->available_departures);
+  LOG_DEBUG("Received all %d departures", screen->available_departures);
   screen->load_complete = true;
 
   menu_layer_reload_data(screen->menu_layer);
@@ -142,17 +142,17 @@ static void departures_callback(DictionaryIterator *iter, void *context) {
 
   Tuple *count_tuple = dict_find(iter, MESSAGE_KEY_count);
   if (!count_tuple) {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "No departure data received");
+    LOG_ERROR("No departure data received");
     return;
   }
   uint8_t count = count_tuple->value->uint8;
 
   screen->available_departures = count > MAX_DEPARTURE_COUNT ? MAX_DEPARTURE_COUNT : count;
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Set available departures to %d", screen->available_departures);
+  LOG("Available departures = %d", screen->available_departures);
 
   if (screen->available_departures == 0) {
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "No departures received");
+    LOG_WARN("No departures");
     no_departures(screen);
     return;
   }
@@ -173,9 +173,9 @@ static void departures_callback(DictionaryIterator *iter, void *context) {
 
   screen->departure_count++;
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "Received departure %d: %s, %s, %s, %s", screen->departure_count,
-          screen->departures[screen->departure_count - 1].serviceID, screen->departures[screen->departure_count - 1].destination,
-          screen->departures[screen->departure_count - 1].departureTime, screen->departures[screen->departure_count - 1].platform);
+  LOG_DEBUG_VERBOSE("Received departure %d: %s, %s, %s, %s", screen->departure_count, screen->departures[screen->departure_count - 1].serviceID,
+                    screen->departures[screen->departure_count - 1].destination, screen->departures[screen->departure_count - 1].departureTime,
+                    screen->departures[screen->departure_count - 1].platform);
 
   if (screen->departure_count == screen->available_departures) {
     departures_load_complete(screen);
@@ -192,7 +192,7 @@ void prv_load_departures(DeparturesScreen *screen) {
 void departures_window_appear(Window *window) {
   DeparturesScreen *screen = window_get_user_data(window);
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Departures window appear");
+  LOG_DEBUG("Departures window appear");
 
   screen->status_bar = custom_status_bar_layer_create();
 
@@ -224,7 +224,7 @@ void departures_window_appear(Window *window) {
     departures_load_complete(screen);
   }
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Departures window appear complete");
+  LOG_DEBUG("Departures window appear complete");
 }
 
 void departures_window_disappear(Window *window) {
@@ -264,11 +264,11 @@ void departures_screen_destroy(DeparturesScreen *screen) {
 
   window_destroy(screen->window);
   free(screen);
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Departures screen destroyed");
+  LOG_DEBUG("Departures screen destroyed");
 }
 
 void departures_window_unload(Window *window) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Departures screen unload");
+  LOG_DEBUG("Departures screen unload");
   DeparturesScreen *screen = window_get_user_data(window);
   departures_screen_destroy(screen);
 }
@@ -299,12 +299,12 @@ DeparturesScreen *departures_screen_create(char *crs, char *station_name) {
 
   prv_load_departures(screen);
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Departures screen created");
+  LOG_DEBUG("Departures screen created");
 
   return screen;
 }
 
 void departures_screen_push(DeparturesScreen *screen) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Departures screen pushed");
+  LOG_DEBUG("Departures screen pushed");
   window_manager_push_window(screen->window);
 }

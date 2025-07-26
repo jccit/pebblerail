@@ -1,5 +1,7 @@
 #include "spinner_layer.h"
 
+#include "../utils.h"
+
 const int spinner_interval_ms = 50;
 const uint16_t spinner_radius = 25;
 const uint32_t spinner_angle_gap = 60;
@@ -70,7 +72,7 @@ SpinnerLayer *spinner_layer_init(GRect bounds) {
 
 void spinner_layer_deinit(Layer *spinner_layer) {
   if (spinner_layer == NULL) {
-    APP_LOG(APP_LOG_LEVEL_WARNING, "Tried to deinit NULL spinner layer");
+    LOG_WARN("Tried to deinit NULL spinner layer");
     return;
   }
 

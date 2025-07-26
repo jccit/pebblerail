@@ -46,7 +46,7 @@ static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_in
     return;
   }
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Showing departures for %s", screen->stations[cell_index->row].crs);
+  LOG("Showing departures for %s", screen->stations[cell_index->row].crs);
 
   DeparturesScreen *departures_screen = departures_screen_create(screen->stations[cell_index->row].crs, screen->stations[cell_index->row].name);
   departures_screen_push(departures_screen);
@@ -55,7 +55,7 @@ static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_in
 // ------ END MENU LAYER CALLBACKS ------
 
 static void station_load_complete(StationScreen *screen) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Received all %d stations", MAX_STATION_COUNT);
+  LOG("Received all %d stations", MAX_STATION_COUNT);
 
   menu_layer_reload_data(screen->menu_layer);
   layer_set_hidden(menu_layer_get_layer(screen->menu_layer), false);
@@ -71,7 +71,7 @@ static void closest_station_callback(DictionaryIterator *iter, void *context) {
 
   Tuple *location_tuple = dict_find(iter, MESSAGE_KEY_locationName);
   if (!location_tuple) {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "No station data received");
+    LOG_ERROR("No station data received");
     return;
   }
 
@@ -79,7 +79,7 @@ static void closest_station_callback(DictionaryIterator *iter, void *context) {
 
   Tuple *crs_tuple = dict_find(iter, MESSAGE_KEY_crs);
   if (!crs_tuple) {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "No crs data received");
+    LOG_ERROR("No crs data received");
     return;
   }
 
@@ -87,7 +87,7 @@ static void closest_station_callback(DictionaryIterator *iter, void *context) {
 
   Tuple *distance_tuple = dict_find(iter, MESSAGE_KEY_distance);
   if (!distance_tuple) {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "No distance data received");
+    LOG_ERROR("No distance data received");
     return;
   }
 
@@ -106,8 +106,8 @@ static void closest_station_callback(DictionaryIterator *iter, void *context) {
 
   screen->loaded_station_count++;
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Received station %d: %s, %s", screen->loaded_station_count, stations[screen->loaded_station_count - 1].name,
-          stations[screen->loaded_station_count - 1].distance);
+  LOG_DEBUG("Received station %d: %s, %s", screen->loaded_station_count, stations[screen->loaded_station_count - 1].name,
+            stations[screen->loaded_station_count - 1].distance);
 
   if (screen->loaded_station_count == MAX_STATION_COUNT) {
     station_load_complete(screen);
@@ -126,7 +126,7 @@ void prv_load_stations(StationScreen *screen) {
 }
 
 void station_window_appear(Window *window) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Station screen appear");
+  LOG_DEBUG("Station screen appear");
   StationScreen *screen = window_get_user_data(window);
 
   Layer *window_layer = window_get_root_layer(window);
@@ -154,7 +154,7 @@ void station_window_appear(Window *window) {
   layer_add_child(window_layer, screen->spinner_layer);
   layer_add_child(window_layer, status_bar_layer_get_layer(screen->status_bar));
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Station screen appear complete");
+  LOG_DEBUG("Station screen appear complete");
 
   if (screen->loaded_station_count > 0) {
     station_load_complete(screen);
@@ -162,7 +162,7 @@ void station_window_appear(Window *window) {
 }
 
 void station_window_disappear(Window *window) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Station screen disappear");
+  LOG_DEBUG("Station screen disappear");
   StationScreen *screen = window_get_user_data(window);
 
   custom_status_bar_layer_destroy(screen->status_bar);
@@ -172,18 +172,18 @@ void station_window_disappear(Window *window) {
   screen->spinner_layer = NULL;
   screen->status_bar = NULL;
   screen->menu_layer = NULL;
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Station screen disappear complete");
+  LOG_DEBUG("Station screen disappear complete");
 }
 
 void station_screen_destroy(StationScreen *screen) {
   window_destroy(screen->window);
   free(screen->stations);
   free(screen);
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Station screen destroyed");
+  LOG_DEBUG("Station screen destroyed");
 }
 
 void station_window_unload(Window *window) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Station screen unload");
+  LOG_DEBUG("Station screen unload");
   StationScreen *screen = window_get_user_data(window);
   station_screen_destroy(screen);
 }
@@ -202,12 +202,12 @@ StationScreen *station_screen_create() {
 
   prv_load_stations(screen);
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Station screen created");
+  LOG_DEBUG("Station screen created");
 
   return screen;
 }
 
 void station_screen_push(StationScreen *screen) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Station screen pushed");
+  LOG_DEBUG("Station screen pushed");
   window_manager_push_window(screen->window);
 }

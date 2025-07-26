@@ -67,7 +67,7 @@ void prv_load_service(ServiceScreen *screen);
 static void action_performed_callback(ActionMenu *action_menu, const ActionMenuItem *action, void *context) {
   ServiceScreen *screen = context;
   ServiceMenuAction selected_action = (ServiceMenuAction)action_menu_item_get_action_data(action);
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Selected action: %d", selected_action);
+  LOG_DEBUG("Selected action: %d", selected_action);
 
   if (selected_action == MENU_ACTION_VIEW_DEPARTURES) {
     DeparturesScreen *departures_screen = departures_screen_create(screen->calling_points[screen->selected_calling_point_index].crs,
@@ -136,9 +136,9 @@ static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_in
 
   // Show the ActionMenu
   screen->selected_calling_point_index = cell_index->row;
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Opening action menu: %p", screen->action_menu);
+  LOG_DEBUG("Opening action menu: %p", screen->action_menu);
   screen->action_menu = action_menu_open(&config);
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Action menu opened: %p", screen->action_menu);
+  LOG_DEBUG("Action menu opened: %p", screen->action_menu);
 }
 
 // ------ END MENU LAYER CALLBACKS ------
@@ -148,7 +148,7 @@ static uint16_t get_origin_calling_point_index(ServiceScreen *screen) {
   if (screen->available_calling_points == screen->calling_point_count) {
     for (int i = 0; i < screen->available_calling_points; i++) {
       if (strcmp(screen->calling_points[i].crs, screen->service_info.origin) == 0) {
-        APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "Origin calling point %s = %s index: %d", screen->calling_points[i].crs, screen->service_info.origin, i);
+        LOG_DEBUG_VERBOSE("Origin calling point %s = %s index: %d", screen->calling_points[i].crs, screen->service_info.origin, i);
         return i;
       }
     }
@@ -207,8 +207,8 @@ static void animate_menu_in(ServiceScreen *screen) {
   GRect start = get_menu_offscreen_frame(screen);
   GRect end = screen->menu_frame_start;
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "Menu anim start: %d, %d, %d, %d", start.origin.x, start.origin.y, start.size.w, start.size.h);
-  APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "Menu anim end: %d, %d, %d, %d", end.origin.x, end.origin.y, end.size.w, end.size.h);
+  LOG_DEBUG_VERBOSE("Menu anim start: %d, %d, %d, %d", start.origin.x, start.origin.y, start.size.w, start.size.h);
+  LOG_DEBUG_VERBOSE("Menu anim end: %d, %d, %d, %d", end.origin.x, end.origin.y, end.size.w, end.size.h);
 
   free_menu_anim(screen);
 
@@ -245,8 +245,8 @@ static void animate_menu_out(ServiceScreen *screen) {
   GRect start = screen->menu_frame_start;
   GRect end = get_menu_offscreen_frame(screen);
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "Menu anim start: %d, %d, %d, %d", start.origin.x, start.origin.y, start.size.w, start.size.h);
-  APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "Menu anim end: %d, %d, %d, %d", end.origin.x, end.origin.y, end.size.w, end.size.h);
+  LOG_DEBUG_VERBOSE("Menu anim start: %d, %d, %d, %d", start.origin.x, start.origin.y, start.size.w, start.size.h);
+  LOG_DEBUG_VERBOSE("Menu anim end: %d, %d, %d, %d", end.origin.x, end.origin.y, end.size.w, end.size.h);
 
   free_menu_anim(screen);
 
@@ -263,7 +263,7 @@ static void animate_menu_out(ServiceScreen *screen) {
 }
 
 static void prv_init_service_action_menu(ServiceScreen *screen) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "Creating action menu root level");
+  LOG_DEBUG_VERBOSE("Creating action menu root level");
 
   screen->root_level = action_menu_level_create(ACTION_MENU_NUM_ITEMS);
 
@@ -350,7 +350,7 @@ static void menu_up_handler(ClickRecognizerRef recognizer, void *context) {
   MenuIndex index = menu_layer_get_selected_index(screen->menu_layer);
 
   if (index.row == 0) {
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Going back to service summary");
+    LOG_DEBUG("Going back to service summary");
     deactivate_menu(screen);
     show_service_summary(screen);
     return;
@@ -386,7 +386,7 @@ static void menu_click_config_provider(void *context) {
 static void window_double_select_handler(ClickRecognizerRef recognizer, void *context) {
   ServiceScreen *screen = context;
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Reloading service data");
+  LOG_DEBUG("Reloading service data");
   prv_load_service(screen);
 }
 
@@ -394,7 +394,7 @@ static void window_down_handler(ClickRecognizerRef recognizer, void *context) {
   ServiceScreen *screen = context;
 
   if (!screen->is_menu_active) {
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Switching to calling point list");
+    LOG_DEBUG("Switching to calling point list");
     activate_menu(screen, true);
     return;
   }
@@ -419,7 +419,7 @@ static void window_up_handler(ClickRecognizerRef recognizer, void *context) {
   }
 #endif
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Switching to service summary");
+  LOG_DEBUG("Switching to service summary");
   deactivate_menu(screen);
   show_service_summary(screen);
 }
@@ -433,7 +433,7 @@ static void summary_click_config_provider(void *context) {
 }
 
 static void service_load_complete(ServiceScreen *screen) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Received all %d calling points", screen->available_calling_points);
+  LOG_DEBUG("Received all %d calling points", screen->available_calling_points);
   screen->is_loading = false;
   screen->load_complete = true;
 
@@ -493,13 +493,13 @@ static void calling_point_callback(DictionaryIterator *iter, void *context) {
 
   Tuple *count_tuple = dict_find(iter, MESSAGE_KEY_count);
   if (!count_tuple) {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "No departure data received");
+    LOG_ERROR("No departure data received");
     return;
   }
 
   uint8_t count = count_tuple->value->uint8;
   screen->available_calling_points = count > MAX_CALLING_POINT_COUNT ? MAX_CALLING_POINT_COUNT : count;
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Set available calling points to %d", screen->available_calling_points);
+  LOG_DEBUG("Set available calling points to %d", screen->available_calling_points);
 
   if (screen->available_calling_points == 0) {
     no_service(screen);
@@ -507,8 +507,7 @@ static void calling_point_callback(DictionaryIterator *iter, void *context) {
   }
 
   if (screen->calling_point_count >= screen->available_calling_points) {
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Received more calling points than available: %d >= %d", screen->calling_point_count,
-            screen->available_calling_points);
+    LOG_DEBUG("Received more calling points than available: %d >= %d", screen->calling_point_count, screen->available_calling_points);
     return;
   }
 
@@ -528,9 +527,9 @@ static void calling_point_callback(DictionaryIterator *iter, void *context) {
 
   screen->calling_point_count++;
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "Received calling point %d: %s, %s, %s", screen->calling_point_count,
-          screen->calling_points[screen->calling_point_count - 1].destination, screen->calling_points[screen->calling_point_count - 1].time,
-          screen->calling_points[screen->calling_point_count - 1].platform);
+  LOG_DEBUG_VERBOSE("Received calling point %d: %s, %s, %s", screen->calling_point_count,
+                    screen->calling_points[screen->calling_point_count - 1].destination, screen->calling_points[screen->calling_point_count - 1].time,
+                    screen->calling_points[screen->calling_point_count - 1].platform);
 
   if (screen->calling_point_count == screen->available_calling_points) {
     service_load_complete(screen);
@@ -542,7 +541,7 @@ void prv_load_service(ServiceScreen *screen) {
     return;
   }
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Loading service %s from %s", screen->service_info.serviceID, screen->service_info.origin);
+  LOG_DEBUG("Loading service %s from %s", screen->service_info.serviceID, screen->service_info.origin);
 
   screen->calling_point_count = 0;
   screen->is_loading = true;
@@ -554,7 +553,7 @@ void prv_load_service(ServiceScreen *screen) {
 }
 
 void service_window_appear(Window *window) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Service screen appearing");
+  LOG_DEBUG("Service screen appearing");
 
   ServiceScreen *screen = window_get_user_data(window);
   screen->status_bar = custom_status_bar_layer_create();
@@ -591,14 +590,14 @@ void service_window_appear(Window *window) {
   layer_add_child(window_layer, screen->spinner_layer);
   layer_set_hidden(screen->spinner_layer, !screen->is_loading);
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Initializing service summary");
+  LOG_DEBUG("Initializing service summary");
   screen->service_summary_layer = service_summary_init(bounds_with_status_bar_no_padding(screen->window));
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Adding service summary to window");
+  LOG_DEBUG("Adding service summary to window");
   layer_add_child(window_layer, screen->service_summary_layer);
   layer_set_hidden(screen->service_summary_layer, !screen->load_complete);
 
   layer_add_child(window_layer, status_bar_layer_get_layer(screen->status_bar));
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Service screen initialized");
+  LOG_DEBUG("Service screen initialized");
 
   if (screen->load_complete) {
     service_load_complete(screen);
@@ -608,7 +607,7 @@ void service_window_appear(Window *window) {
 void service_window_disappear(Window *window) {
   ServiceScreen *screen = window_get_user_data(window);
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Service screen disappearing");
+  LOG_DEBUG("Service screen disappearing");
 
   if (screen->status_bar != NULL) {
     custom_status_bar_layer_destroy(screen->status_bar);
@@ -634,7 +633,7 @@ void service_window_disappear(Window *window) {
   menu_layer_destroy(screen->menu_layer);
 #endif
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Service screen disappeared");
+  LOG_DEBUG("Service screen disappeared");
 }
 
 void service_window_unload(Window *window) {
@@ -649,8 +648,7 @@ ServiceScreen *service_screen_create(char *service_id, char *origin) {
   COPY_STRING(screen->service_info.serviceID, service_id);
   COPY_STRING(screen->service_info.origin, origin);
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Service screen initialized with service ID: %s and origin: %s", screen->service_info.serviceID,
-          screen->service_info.origin);
+  LOG_DEBUG("Service screen initialized with service ID: %s and origin: %s", screen->service_info.serviceID, screen->service_info.origin);
 
   screen->window = window_create();
 
@@ -675,7 +673,7 @@ ServiceScreen *service_screen_create(char *service_id, char *origin) {
 
   window_set_user_data(screen->window, screen);
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Service screen created");
+  LOG_DEBUG("Service screen created");
 
   prv_init_service_action_menu(screen);
   prv_load_service(screen);
@@ -688,7 +686,7 @@ void service_screen_push(ServiceScreen *screen) { window_manager_push_window(scr
 void service_screen_destroy(ServiceScreen *screen) {
   window_destroy(screen->window);
   free(screen);
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Service screen destroyed");
+  LOG_DEBUG("Service screen destroyed");
 }
 
 ServiceScreen *top_window_as_service_screen() {

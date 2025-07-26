@@ -2,20 +2,20 @@
 
 #include <pebble.h>
 
-#define EXTRACT_TUPLE(iter, key, var)                          \
-  Tuple *var##_tuple = dict_find(iter, MESSAGE_KEY_##key);     \
-  if (!var##_tuple) {                                          \
-    APP_LOG(APP_LOG_LEVEL_ERROR, "No " #key " data received"); \
-    return;                                                    \
-  }                                                            \
+#define EXTRACT_TUPLE(iter, key, var)                      \
+  Tuple *var##_tuple = dict_find(iter, MESSAGE_KEY_##key); \
+  if (!var##_tuple) {                                      \
+    LOG_ERROR("No " #key " data received");                \
+    return;                                                \
+  }                                                        \
   char *var = var##_tuple->value->cstring;
 
-#define EXTRACT_INT(iter, key, var)                            \
-  Tuple *var##_tuple = dict_find(iter, MESSAGE_KEY_##key);     \
-  if (!var##_tuple) {                                          \
-    APP_LOG(APP_LOG_LEVEL_ERROR, "No " #key " data received"); \
-    return;                                                    \
-  }                                                            \
+#define EXTRACT_INT(iter, key, var)                        \
+  Tuple *var##_tuple = dict_find(iter, MESSAGE_KEY_##key); \
+  if (!var##_tuple) {                                      \
+    LOG_ERROR("No " #key " data received");                \
+    return;                                                \
+  }                                                        \
   int var = var##_tuple->value->int32;
 
 #define COPY_STRING(dest, src)          \

@@ -34,7 +34,7 @@ static GFont s_number_font;
 static void service_summary_load_icons(ServiceSummaryData *service_summary_data) {
   if (s_train_icon == NULL) {
     s_train_icon = gdraw_command_image_create_with_resource(RESOURCE_ID_TRAIN_SMALL);
-    APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "train icon = %p", s_train_icon);
+    LOG_DEBUG_VERBOSE("train icon = %p", s_train_icon);
   }
 
 #ifndef PBL_PLATFORM_APLITE
@@ -139,7 +139,7 @@ static void service_summary_update_proc(Layer *layer, GContext *ctx) {
 
 ServiceSummaryLayer *service_summary_init(GRect bounds) {
   s_train_icon = gdraw_command_image_create_with_resource(RESOURCE_ID_TRAIN_SMALL);
-  APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "train icon = %p", s_train_icon);
+  LOG_DEBUG_VERBOSE("train icon = %p", s_train_icon);
 
   s_destination_font = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
   s_origin_font = fonts_get_system_font(FONT_KEY_GOTHIC_18);
@@ -256,8 +256,8 @@ void service_summary_animate_out(ServiceSummaryLayer *summary_layer) {
   GRect start = service_summary_data->bounds;
   GRect end = GRect(start.origin.x, start.origin.y - (start.size.h + SUMMARY_ANIMATION_Y_OFFSET), start.size.w, start.size.h);
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "Service summary anim start: %d, %d, %d, %d", start.origin.x, start.origin.y, start.size.w, start.size.h);
-  APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "Service summary anim end: %d, %d, %d, %d", end.origin.x, end.origin.y, end.size.w, end.size.h);
+  LOG_DEBUG_VERBOSE("Service summary anim start: %d, %d, %d, %d", start.origin.x, start.origin.y, start.size.w, start.size.h);
+  LOG_DEBUG_VERBOSE("Service summary anim end: %d, %d, %d, %d", end.origin.x, end.origin.y, end.size.w, end.size.h);
 
   service_summary_free_anim(summary_layer);
 
@@ -275,8 +275,8 @@ void service_summary_animate_in(ServiceSummaryLayer *summary_layer) {
   GRect end = service_summary_data->bounds;
   GRect start = GRect(end.origin.x, end.origin.y - (end.size.h + SUMMARY_ANIMATION_Y_OFFSET), end.size.w, end.size.h);
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "Service summary anim start: %d, %d, %d, %d", start.origin.x, start.origin.y, start.size.w, start.size.h);
-  APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "Service summary anim end: %d, %d, %d, %d", end.origin.x, end.origin.y, end.size.w, end.size.h);
+  LOG_DEBUG_VERBOSE("Service summary anim start: %d, %d, %d, %d", start.origin.x, start.origin.y, start.size.w, start.size.h);
+  LOG_DEBUG_VERBOSE("Service summary anim end: %d, %d, %d, %d", end.origin.x, end.origin.y, end.size.w, end.size.h);
 
   service_summary_free_anim(summary_layer);
 

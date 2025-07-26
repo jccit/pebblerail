@@ -1,5 +1,7 @@
 #include "data.h"
 
+#include "utils.h"
+
 const uint32_t inbox_size = 400;
 const uint32_t outbox_size = 128;
 const uint32_t CACHE_COMMAND_DELAY_MS = 500;
@@ -35,7 +37,7 @@ char *command_type_to_string(CommandType command) {
 void send_data_request(CommandType command, char *data, uint8_t data_length) {
   // If we're not ready, cache the command and send it when we are ready
   if (!js_ready) {
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Caching data request till js ready: %d", command);
+    LOG_DEBUG("Caching data request till js ready: %d", command);
     cached_command = command;
     return;
   }
@@ -44,7 +46,7 @@ void send_data_request(CommandType command, char *data, uint8_t data_length) {
 
   AppMessageResult result = app_message_outbox_begin(&iter);
   if (result != APP_MSG_OK) {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "Failed to send data request: %d", result);
+    LOG_ERROR("Failed to send data request: %d", result);
     return;
   }
 
@@ -57,7 +59,7 @@ void send_data_request(CommandType command, char *data, uint8_t data_length) {
   result = app_message_outbox_send();
 
   if (result != APP_MSG_OK) {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "Failed to send data request outbox: %d", result);
+    LOG_ERROR("Failed to send data request outbox: %d", result);
   }
 }
 
@@ -65,7 +67,7 @@ void send_data_request(CommandType command, char *data, uint8_t data_length) {
 
 void cached_command_send() {
   if (cached_command) {
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Sending cached data request: %d", cached_command);
+    LOG_DEBUG("Sending cached data request: %d", cached_command);
     send_data_request(cached_command, NULL, 0);
     cached_command = COMMAND_TYPE_UNKNOWN;
   }
@@ -75,7 +77,7 @@ void cached_command_send() {
 void cached_command_queue() { app_timer_register(CACHE_COMMAND_DELAY_MS, cached_command_send, NULL); }
 
 void js_ready_callback(bool ready) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "JS READY = %d", ready);
+  LOG("JS READY = %d", ready);
   js_ready = ready;
 
   // If we have a cached command, queue the send
@@ -85,7 +87,7 @@ void js_ready_callback(bool ready) {
 }
 
 void inbox_received_callback(DictionaryIterator *iter, void *context) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Inbox received");
+  LOG_DEBUG("Inbox received");
 
   Tuple *jsReady = dict_find(iter, MESSAGE_KEY_jsReady);
 

@@ -1,6 +1,7 @@
 #include "round_route_path.h"
 
 #include "../tocs.h"
+#include "../utils.h"
 #include "calling_point_icon.h"
 
 #ifdef PBL_ROUND
@@ -188,7 +189,7 @@ bool round_route_next_calling_point(Layer *layer) {
     return true;
   }
   round_route_set_selected(layer, data->selected + 1);
-  APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "Selected calling point: %d", data->selected);
+  LOG_DEBUG_VERBOSE("Selected calling point: %d", data->selected);
   return false;
 }
 
@@ -198,7 +199,7 @@ bool round_route_previous_calling_point(Layer *layer) {
     return true;
   }
   round_route_set_selected(layer, data->selected - 1);
-  APP_LOG(APP_LOG_LEVEL_DEBUG_VERBOSE, "Selected calling point: %d", data->selected);
+  LOG_DEBUG_VERBOSE("Selected calling point: %d", data->selected);
   return false;
 }
 
