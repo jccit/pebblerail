@@ -7,7 +7,7 @@
   ],
   "private": true,
   "scripts": {
-    "build": "yarn proto && rollup -c",
+    "build": "rollup -c",
     "proto": "pbjs -t static-module -w es6 --es6 -o src/ts/gen/stations.js src/ts/proto/stations.proto && pbts -o src/ts/gen/stations.d.ts src/ts/gen/stations.js"
   },
   "pebble": {
