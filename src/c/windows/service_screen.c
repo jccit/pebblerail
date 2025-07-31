@@ -42,7 +42,7 @@ struct ServiceScreen {
   PropertyAnimation *menu_prop_anim;
   Animation *menu_anim;
 
-  struct CallingPointEntry calling_points[MAX_CALLING_POINT_COUNT];
+  struct CallingPointEntry *calling_points;
   uint8_t selected_calling_point_index;
   uint8_t calling_point_count;
   uint8_t available_calling_points;
@@ -484,6 +484,10 @@ static void service_info_callback(DictionaryIterator *iter, void *context) {
   screen->service_info.isCancelled = isCancelled;
 }
 
+static void alloc_calling_points(ServiceScreen *screen) {
+  screen->calling_points = wm_alloc(sizeof(struct CallingPointEntry) * screen->available_calling_points);
+}
+
 static void calling_point_callback(DictionaryIterator *iter, void *context) {
   ServiceScreen *screen = context;
 
@@ -504,6 +508,8 @@ static void calling_point_callback(DictionaryIterator *iter, void *context) {
   if (screen->available_calling_points == 0) {
     no_service(screen);
     return;
+  } else if (screen->calling_points == NULL) {
+    alloc_calling_points(screen);
   }
 
   if (screen->calling_point_count >= screen->available_calling_points) {
@@ -660,6 +666,7 @@ ServiceScreen *service_screen_create(char *service_id, char *origin) {
   screen->root_level = NULL;
   screen->menu_prop_anim = NULL;
   screen->menu_anim = NULL;
+  screen->calling_points = NULL;
 
   screen->load_complete = false;
   screen->is_loading = false;
@@ -685,6 +692,11 @@ void service_screen_push(ServiceScreen *screen) { window_manager_push_window(scr
 
 void service_screen_destroy(ServiceScreen *screen) {
   window_destroy(screen->window);
+
+  if (screen->calling_points != NULL) {
+    free(screen->calling_points);
+  }
+
   free(screen);
   LOG_DEBUG("Service screen destroyed");
 }

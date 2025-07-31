@@ -27,7 +27,7 @@ struct DeparturesScreen {
   ActionMenuLevel *root_level;
   uint8_t selected_departure_index;
 
-  struct DepartureEntry departures[MAX_DEPARTURE_COUNT];
+  struct DepartureEntry *departures;
   uint8_t departure_count;
   uint8_t available_departures;
   bool load_complete;
@@ -135,6 +135,10 @@ static void no_departures(DeparturesScreen *screen) {
   layer_add_child(window_get_root_layer(screen->window), text_layer_get_layer(screen->error_layer));
 }
 
+static void alloc_departures(DeparturesScreen *screen) {
+  screen->departures = wm_alloc(sizeof(struct DepartureEntry) * screen->available_departures);
+}
+
 static void departures_callback(DictionaryIterator *iter, void *context) {
   DeparturesScreen *screen = context;
 
@@ -155,6 +159,8 @@ static void departures_callback(DictionaryIterator *iter, void *context) {
     LOG_WARN("No departures");
     no_departures(screen);
     return;
+  } else if (screen->departures == NULL) {
+    alloc_departures(screen);
   }
 
   EXTRACT_TUPLE(iter, serviceID, serviceID);
@@ -262,6 +268,10 @@ void departures_screen_destroy(DeparturesScreen *screen) {
     screen->root_level = NULL;
   }
 
+  if (screen->departures != NULL) {
+    free(screen->departures);
+  }
+
   window_destroy(screen->window);
   free(screen);
   LOG_DEBUG("Departures screen destroyed");
@@ -285,6 +295,7 @@ DeparturesScreen *departures_screen_create(char *crs, char *station_name) {
   screen->error_layer = NULL;
   screen->action_menu = NULL;
   screen->root_level = NULL;
+  screen->departures = NULL;
   screen->load_complete = false;
 
   screen->window = window_create();
