@@ -68,6 +68,16 @@
           "file": "train_large.pdc"
         },
         {
+          "type": "raw",
+          "name": "METRO_TINY",
+          "file": "metro_tiny.pdc"
+        },
+        {
+          "type": "raw",
+          "name": "METRO_SMALL",
+          "file": "metro_small.pdc"
+        },
+        {
           "type": "png",
           "name": "DOWN_ARROW_BLACK",
           "file": "down_arrow_black.png"

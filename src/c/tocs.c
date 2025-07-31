@@ -1,6 +1,6 @@
 #include "tocs.h"
 
-#define OPERATOR_INFO_SIZE 33
+#define OPERATOR_INFO_SIZE 34
 
 typedef struct {
   const char *key;
@@ -31,26 +31,29 @@ OperatorInfo operator_info(char *requested_code) {
 
   int index = operator_info_index(requested_code);
   if (index == -1) {
-    return (OperatorInfo){name, GColorWhite};
+    return (OperatorInfo){name, GColorWhite, false};
   }
 
   uint8_t *op_buffer = malloc(OPERATOR_INFO_SIZE);
   size_t loaded_bytes = resource_load_byte_range(handle, index * OPERATOR_INFO_SIZE, op_buffer, OPERATOR_INFO_SIZE);
 
   if (loaded_bytes != OPERATOR_INFO_SIZE) {
-    return (OperatorInfo){name, GColorWhite};
+    return (OperatorInfo){name, GColorWhite, false};
   }
 
-  memcpy(name, op_buffer, OPERATOR_INFO_SIZE - 1);
-  memset(op_buffer, 0, OPERATOR_INFO_SIZE - 2);
+  memcpy(name, op_buffer, OPERATOR_INFO_SIZE - 2);
+  memset(op_buffer, 0, OPERATOR_INFO_SIZE - 3);
 
 #ifdef PBL_BW
   GColor colour = GColorWhite;
 #else
-  GColor colour = (GColor8){.argb = op_buffer[OPERATOR_INFO_SIZE - 1]};
+  GColor colour = (GColor8){.argb = op_buffer[OPERATOR_INFO_SIZE - 2]};
 #endif
+
+  uint8_t type = op_buffer[OPERATOR_INFO_SIZE - 1];
+  bool metro = (type & 0b00000001) == 0b00000001;
 
   free(op_buffer);
 
-  return (OperatorInfo){name, colour};
+  return (OperatorInfo){name, colour, metro};
 }

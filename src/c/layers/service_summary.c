@@ -33,7 +33,8 @@ static GFont s_number_font;
 
 static void service_summary_load_icons(ServiceSummaryData *service_summary_data) {
   if (s_train_icon == NULL) {
-    s_train_icon = gdraw_command_image_create_with_resource(RESOURCE_ID_TRAIN_SMALL);
+    uint32_t icon = service_summary_data->operator_info.metro ? RESOURCE_ID_METRO_SMALL : RESOURCE_ID_TRAIN_SMALL;
+    s_train_icon = gdraw_command_image_create_with_resource(icon);
     LOG_DEBUG_VERBOSE("train icon = %p", s_train_icon);
   }
 
@@ -138,9 +139,6 @@ static void service_summary_update_proc(Layer *layer, GContext *ctx) {
 }
 
 ServiceSummaryLayer *service_summary_init(GRect bounds) {
-  s_train_icon = gdraw_command_image_create_with_resource(RESOURCE_ID_TRAIN_SMALL);
-  LOG_DEBUG_VERBOSE("train icon = %p", s_train_icon);
-
   s_destination_font = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
   s_origin_font = fonts_get_system_font(FONT_KEY_GOTHIC_18);
   s_operator_font = fonts_get_system_font(FONT_KEY_GOTHIC_14);
@@ -157,7 +155,7 @@ ServiceSummaryLayer *service_summary_init(GRect bounds) {
   service_summary_data->bounds = bounds;
   service_summary_data->destination = "";
   service_summary_data->operator_code = "";
-  service_summary_data->operator_info = (OperatorInfo){NULL, GColorBlack};
+  service_summary_data->operator_info = (OperatorInfo){NULL, GColorBlack, false};
   service_summary_data->time = "23:59";
 
   service_summary_data->prop_anim = NULL;
