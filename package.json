@@ -1,7 +1,7 @@
 {
   "name": "pebblerail",
   "author": "jcit",
-  "version": "0.6",
+  "version": "0.7",
   "keywords": [
     "pebble-app"
   ],
@@ -19,7 +19,8 @@
       "aplite",
       "basalt",
       "chalk",
-      "diorite"
+      "diorite",
+      "emery"
     ],
     "watchapp": {
       "watchface": false
