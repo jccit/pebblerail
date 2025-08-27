@@ -38,9 +38,12 @@ export function pinCallingPoint(
         }
       );
     },
-    (error) => {
-      console.log(`Error getting timeline token: ${error}`);
-      showError("Timeline token error", error);
+    () => {
+      console.log(`Error getting timeline token`);
+      showError(
+        "Timeline token error",
+        new Error("Failed to get timeline token")
+      );
     }
   );
 }
