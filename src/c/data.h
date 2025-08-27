@@ -61,6 +61,11 @@ typedef struct Station {
   char distance[9];
 } Station;
 
+typedef struct SavedStation {
+  char name[30];
+  char crs[4];
+} SavedStation;
+
 typedef struct DepartureEntry {
   char serviceID[20];
   char destination[30];
