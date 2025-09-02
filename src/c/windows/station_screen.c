@@ -24,11 +24,13 @@ struct StationScreen {
   Station *stations;
   SavedStation *saved_stations;
   bool load_complete;
+  bool visible;
   uint8_t loaded_station_count;
   uint8_t saved_station_count;
 
   ActionMenu *action_menu;
   ActionMenuLevel *root_level;
+  bool selected_saved_station;
   uint8_t selected_station_index;
 };
 bool has_saved_stations(StationScreen *screen) { return screen->saved_station_count > 0; }
@@ -77,16 +79,29 @@ static void station_action_performed_callback(ActionMenu *action_menu, const Act
   StationMenuAction selected_action = (StationMenuAction)action_menu_item_get_action_data(action);
   LOG_DEBUG("Selected action: %d", selected_action);
 
-  Station *selected_station = &screen->stations[screen->selected_station_index];
+  SavedStation *saved_station_data = NULL;
+  Station *selected_station_data = NULL;
+  char *selected_crs;
+  char *selected_name;
+
+  if (screen->selected_saved_station) {
+    saved_station_data = &screen->saved_stations[screen->selected_station_index];
+    selected_crs = saved_station_data->crs;
+    selected_name = saved_station_data->name;
+  } else {
+    selected_station_data = &screen->stations[screen->selected_station_index];
+    selected_crs = selected_station_data->crs;
+    selected_name = selected_station_data->name;
+  }
 
   if (selected_action == MENU_ACTION_VIEW_DEPARTURES) {
-    DeparturesScreen *departures_screen = departures_screen_create(selected_station->crs, selected_station->name);
+    DeparturesScreen *departures_screen = departures_screen_create(selected_crs, selected_name);
     departures_screen_push(departures_screen);
   } else if (selected_action == MENU_ACTION_SAVE) {
-    persist_save_station(selected_station);
+    persist_save_station(selected_station_data);
     prv_load_saved_stations(screen);
   } else if (selected_action == MENU_ACTION_DELETE) {
-    persist_delete_station(selected_station->crs);
+    persist_delete_station(selected_crs);
     prv_load_saved_stations(screen);
   }
 }
@@ -136,6 +151,8 @@ static void menu_draw_header_callback(GContext *ctx, const Layer *cell_layer, ui
   StationScreen *screen = data;
 
   if (!has_saved_stations(screen)) {
+    if (!screen->load_complete) return;
+
     menu_section_header_draw(ctx, cell_layer, "Closest stations");
     return;
   }
@@ -165,7 +182,7 @@ static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_in
 
   screen->root_level = action_menu_level_create(STATION_ACTION_MENU_NUM_ITEMS);
 
-  action_menu_level_add_action(screen->root_level, "View stops", station_action_performed_callback, (void *)MENU_ACTION_VIEW_DEPARTURES);
+  action_menu_level_add_action(screen->root_level, "View departures", station_action_performed_callback, (void *)MENU_ACTION_VIEW_DEPARTURES);
 
   if (is_saved_section || is_saved) {
     action_menu_level_add_action(screen->root_level, "Unfavourite", station_action_performed_callback, (void *)MENU_ACTION_DELETE);
@@ -184,6 +201,7 @@ static void menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_in
                                                .context = screen};
 
   // Show the ActionMenu
+  screen->selected_saved_station = is_saved_section;
   screen->selected_station_index = cell_index->row;
   screen->action_menu = action_menu_open(&config);
 }
@@ -194,11 +212,13 @@ static void station_load_complete(StationScreen *screen) {
   LOG("Received all %d stations", MAX_STATION_COUNT);
   screen->load_complete = true;
 
-  menu_layer_reload_data(screen->menu_layer);
-  layer_set_hidden(menu_layer_get_layer(screen->menu_layer), false);
-  layer_mark_dirty(menu_layer_get_layer(screen->menu_layer));
+  if (screen->visible) {
+    menu_layer_reload_data(screen->menu_layer);
+    layer_set_hidden(menu_layer_get_layer(screen->menu_layer), false);
+    layer_mark_dirty(menu_layer_get_layer(screen->menu_layer));
 
-  layer_set_hidden(screen->spinner_layer, true);
+    layer_set_hidden(screen->spinner_layer, true);
+  }
 }
 
 static void closest_station_callback(DictionaryIterator *iter, void *context) {
@@ -263,6 +283,7 @@ void prv_load_stations(StationScreen *screen) {
 void station_window_appear(Window *window) {
   LOG_DEBUG("Station screen appear");
   StationScreen *screen = window_get_user_data(window);
+  screen->visible = true;
 
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
@@ -300,6 +321,7 @@ void station_window_appear(Window *window) {
 void station_window_disappear(Window *window) {
   LOG_DEBUG("Station screen disappear");
   StationScreen *screen = window_get_user_data(window);
+  screen->visible = false;
 
   custom_status_bar_layer_destroy(screen->status_bar);
   menu_layer_destroy(screen->menu_layer);
@@ -331,6 +353,7 @@ void station_screen_destroy(StationScreen *screen) {
 
 void station_window_unload(Window *window) {
   LOG_DEBUG("Station screen unload");
+  set_closest_station_callback(NULL, NULL);
   StationScreen *screen = window_get_user_data(window);
   station_screen_destroy(screen);
 }
@@ -339,6 +362,7 @@ StationScreen *station_screen_create() {
   StationScreen *screen = wm_alloc(sizeof(StationScreen));
   screen->window = window_create();
   screen->load_complete = false;
+  screen->visible = true;
 
   window_set_window_handlers(screen->window, (WindowHandlers){
                                                  .unload = station_window_unload,
