@@ -5,20 +5,19 @@ import { getDepartureBoard } from "./departures";
 import { getServiceInfo } from "./service";
 import { pinCallingPoint } from "./timeline";
 
-Pebble.addEventListener("ready", (e) => {
+Pebble.addEventListener("ready", async (e) => {
   console.log("PKJS ready, sending jsReady message");
   requestLocation();
-  Pebble.sendAppMessage(
-    {
+
+  try {
+    await PebbleTS.sendAppMessage({
       jsReady: 1,
-    },
-    () => {
-      console.log("jsReady message received");
-    },
-    (e) => {
-      console.log("jsReady message failed: " + JSON.stringify(e));
-    }
-  );
+    });
+
+    console.log("jsReady message received");
+  } catch (e) {
+    console.log("jsReady message failed: " + JSON.stringify(e));
+  }
 });
 
 Pebble.addEventListener("appmessage", (e) => {
@@ -70,14 +69,12 @@ function stationFileLoaded() {
   });
 }
 
-function departures(crs: string) {
-  getDepartureBoard(crs, (departures) => {
-    sendDepartureList(departures);
-  });
+async function departures(crs: string) {
+  const departures = await getDepartureBoard(crs);
+  sendDepartureList(departures);
 }
 
-function serviceInfo(serviceID: string, fromCrs: string) {
-  getServiceInfo(serviceID, (service) => {
-    sendServiceInfo(service, fromCrs);
-  });
+async function serviceInfo(serviceID: string, fromCrs: string) {
+  const service = await getServiceInfo(serviceID);
+  sendServiceInfo(service, fromCrs);
 }

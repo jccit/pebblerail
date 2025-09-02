@@ -7,8 +7,7 @@
   ],
   "private": true,
   "scripts": {
-    "build": "node resources/operators.mjs && pkts build",
-    "proto": "pbjs -t static-module -w es6 --es6 -o src/ts/gen/stations.js src/ts/proto/stations.proto && pbts -o src/ts/gen/stations.d.ts src/ts/gen/stations.js"
+    "build": "node resources/operators.mjs && pkts build"
   },
   "pebble": {
     "displayName": "PebbleRail",
@@ -121,11 +120,9 @@
     ]
   },
   "dependencies": {
-    "protobufjs": "^7.4.0",
     "regenerator-runtime": "^0.14.1"
   },
   "devDependencies": {
-    "pkts": "^0.2.1",
-    "protobufjs-cli": "^1.1.3"
+    "pkts": "^0.2.1"
   }
 }
