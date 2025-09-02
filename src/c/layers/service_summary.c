@@ -33,7 +33,11 @@ static GFont s_number_font;
 
 static void service_summary_load_icons(ServiceSummaryData *service_summary_data) {
   if (s_train_icon == NULL) {
+#ifdef PBL_PLATFORM_EMERY
+    uint32_t icon = RESOURCE_ID_TRAIN_LARGE;
+#else
     uint32_t icon = service_summary_data->operator_info.metro ? RESOURCE_ID_METRO_SMALL : RESOURCE_ID_TRAIN_SMALL;
+#endif
     s_train_icon = gdraw_command_image_create_with_resource(icon);
     LOG_DEBUG_VERBOSE("train icon = %p", s_train_icon);
   }
@@ -66,7 +70,7 @@ static void service_summary_update_proc(Layer *layer, GContext *ctx) {
   graphics_context_set_stroke_color(ctx, GColorRed);
   graphics_context_set_compositing_mode(ctx, GCompOpSet);
 
-  int16_t icon_size = 50;
+  int16_t icon_size = gdraw_command_image_get_bounds_size(s_train_icon).w;
   int16_t horizontal_margin = 5 * 2;
   int16_t top_margin = 10;
 
@@ -139,10 +143,17 @@ static void service_summary_update_proc(Layer *layer, GContext *ctx) {
 }
 
 ServiceSummaryLayer *service_summary_init(GRect bounds) {
+#ifdef PBL_PLATFORM_EMERY
+  s_destination_font = fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD);
+  s_origin_font = fonts_get_system_font(FONT_KEY_GOTHIC_24);
+  s_operator_font = fonts_get_system_font(FONT_KEY_GOTHIC_18);
+  s_number_font = fonts_get_system_font(FONT_KEY_LECO_32_BOLD_NUMBERS);
+#else
   s_destination_font = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
   s_origin_font = fonts_get_system_font(FONT_KEY_GOTHIC_18);
   s_operator_font = fonts_get_system_font(FONT_KEY_GOTHIC_14);
   s_number_font = fonts_get_system_font(FONT_KEY_LECO_26_BOLD_NUMBERS_AM_PM);
+#endif
 
   GBitmap *test_icon = gbitmap_create_with_resource(RESOURCE_ID_DOWN_ARROW_BLACK);
   s_down_icon_bounds = gbitmap_get_bounds(test_icon);
@@ -238,7 +249,7 @@ void service_summary_set_data(ServiceSummaryLayer *layer, char *origin, char *de
     service_summary_data->lateness = lateness;
   }
 
-  char *platform_prefix = "Plat: ";
+  char *platform_prefix = "Arriving pl.";
   uint16_t platform_length = strlen(platform_prefix) + strlen(platform);
   char *platform_text = wm_alloc(platform_length + 1);
   strcpy(platform_text, platform_prefix);
